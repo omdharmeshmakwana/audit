@@ -35,7 +35,7 @@ All API traffic is `fetch` + JSON; uploads are XHR `PUT` to S3. No WebSocket see
 | Price table | `GET /fnf/job-sets/costs` | yes |
 | **Notifications** | `GET /fnf-notification/notifications/stream` (SSE over fetch) | `ping`, `folder:job_create`, `folder:job_completed`, `folder:job_remove` |
 | Upload (1/3) | `POST /fnf/media/batch` `{mimetypes, source}` → `[{id, upload_url (presigned S3), url (uploads CDN)}]` | yes |
-| Upload (2/3) | XHR `PUT <presigned S3 url>` with the file | yes |
+| Upload (2/3) | XHR `PUT <presigned S3 url>` with the file. **The page re-encodes images before uploading** (a 5,151,850-byte PNG became 5,069,466 bytes, same 2752×1536, pixels not identical, pHash distance 0), so an upload's sha256 never equals the file the artist picked. Linking needs pHash (Phase 3, `inferred`) | yes |
 | Upload (3/3) | `POST /fnf/media/{id}/upload` `{filename}` → `{id, status: "uploaded"}` | yes |
 | **Image upscale** | `POST layer-worker.higgsfield.ai/api/layer-projects/{project}/generations` `{type: "topaz_image", input_images: [{id, type: "media_input"}], params: {model, denoise, sharpen, output_width, output_height, …}}` → 202 `{id, status: "queued", jobId: null}` | yes |
 | Image upscale status | `GET layer-worker…/generations/{id}` and `…/generations?limit=N` → `{id, jobId, status: in_progress \| completed, completedAt, result: {url}}`. `result.url` is on the outputs CDN named `hf_…_<jobId>.png` | yes (completed item seen) |

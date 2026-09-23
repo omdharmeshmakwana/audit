@@ -68,6 +68,18 @@ describe("magnific adapter", () => {
     expect(c.outputs[0]!.url).toMatch(/render\.png\?token=\[REDACTED\]$/);
   });
 
+  it("an upscale's output is the raw file, not the optimized preview", () => {
+    const rec = fixture("ws-creation-completed.json");
+    const body = rec.response_body as { data: string };
+    const data = JSON.parse(body.data) as { creation: Record<string, unknown> };
+    data.creation.url = "https://pikaso.cdnpk.net/private/production/1/render-optimized.jpg?token=[REDACTED]";
+    data.creation.raw = "https://pikaso.cdnpk.net/private/production/2/render-raw.png?token=[REDACTED]";
+    body.data = JSON.stringify(data);
+    const c = one<Completed>(magnific.parse(rec));
+    expect(c.outputs[0]!.url).toContain("render-raw.png");
+    expect(c.outputs[0]!.media_type).toBe("image");
+  });
+
   it("handles Pusher data already parsed to an object", () => {
     const rec = fixture("ws-creation-completed.json");
     const body = rec.response_body as { data: unknown };

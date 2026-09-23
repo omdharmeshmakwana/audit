@@ -7,6 +7,7 @@
 // Never reads the local filesystem; keeps only a download's file name, never its path.
 
 import { adapterFor } from "../adapters";
+import { bodyFileSha } from "../adapters/types";
 import { SERVER_URL, serviceForHost, type CaptureRecord } from "../shared/capture";
 import { redactUrl } from "../shared/redact";
 import { clearAssetState, fingerprintDownload, hashOutput, recordBlob, refetchDownload } from "./assets";
@@ -85,6 +86,10 @@ async function onCapture(record: CaptureRecord, signedUrls: Record<string, strin
   let captures = adapter.parse(record);
   // Only matched endpoints can be "unknown"; everything else unparsed is simply irrelevant.
   if (captures === null && !adapter.patterns.some((p) => p.test(url))) captures = [];
+  // Safety net: the page hashed a file this request uploaded, but no adapter turned it into
+  // an upload capture. Report it — a missed upload is a broken link in the chain.
+  const uploads = captures?.some((c) => c.kind === "upload_bytes" || c.kind === "asset_location" || c.kind === "upload_slot");
+  if (bodyFileSha(record.request_body) && !uploads && (record.status ?? 0) < 400) captures = null;
   if (captures !== null && captures.length === 0) return;
 
   const session = await getSession();

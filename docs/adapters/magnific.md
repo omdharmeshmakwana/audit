@@ -54,7 +54,7 @@ over a **Pusher WebSocket**, not polled. Pusher frames double-encode: `{"event",
 | `parameters` | request `aspect_ratio`, `resolution`, `width`, `height`, `num_images`, `thinking_level`, `smart_prompt`; completion adds `outputWidth`, `outputHeight`, `elapsedTime` | service_reported |
 | inputs | image: `image_references[]` / `metadata.imageReferences[]` = `{image: "creation:<identifier>", label}`; upscale: `input_image: "creation:<identifier>"`; video: `references[].url` = `creation:<identifier>`, resolved in WS metadata to `{creationId, media_id, url: …/upload.png}`. Uploads are creations too | service_reported |
 | status | WS `data.status`: `queued` (video) → `processing` → `completed`. Failure value UNVERIFIED | service_reported |
-| outputs | WS `creation.url` (signed PNG), `preview`, `large_preview`, `webUrl` | service_reported |
+| outputs | WS `creation.url`, `raw`, `preview`, `large_preview`, `webUrl`. **Upscales:** `url` is a preview JPEG (`render-optimized.jpg`) and `raw` is the real file (`render-raw.png`) — the one a download returns. Text-to-image: `raw` is null and `url` is the real PNG. The adapter prefers `raw` | service_reported |
 | `credits_cost` | `metadata.creditLedger[]` `{type: "consume", credits, creditsEstimated, transactionId}`; `creditLedgerTotals.credits` (**100** seedream-5-pro 2k image, **600** GPT 2.5 edit, **1080** 2× creative upscale, **575** 5 s Kling video). Units match the UI's credits (simulate shows the same numbers) | service_reported |
 | credits balance | `simulate-generation` `total.remaining` | service_reported |
 | service user | query `user_id=225502283`; Pusher channel `private-user.173618012` (two different ids — which is which is UNVERIFIED) | service_reported |

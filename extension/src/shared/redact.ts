@@ -22,17 +22,9 @@ const QUERY_SECRET_IN_TEXT = new RegExp(
 );
 
 export function redactUrl(url: string): string {
-  let u: URL;
-  try {
-    u = new URL(url);
-  } catch {
-    return url;
-  }
-  if (!u.search) return url;
-  for (const key of [...u.searchParams.keys()]) {
-    if (SECRET_QUERY.test(key)) u.searchParams.set(key, REDACTED);
-  }
-  return u.toString();
+  // Same textual rewrite as redactString, so a URL redacted here is byte-identical to the
+  // same URL redacted inside a body (URLSearchParams would encode it as %5BREDACTED%5D).
+  return url.replace(QUERY_SECRET_IN_TEXT, (_m, prefix: string) => `${prefix}${REDACTED}`);
 }
 
 export function redactString(s: string): string {

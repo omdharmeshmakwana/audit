@@ -193,8 +193,10 @@ function parsePusher(rec: CaptureRecord): Capture[] {
   const status = mapStatus(frame.data.status ?? c.status);
   if (!status) return [];
   if (status === "succeeded") {
-    if (!str(c.url)) return [];
-    const url = c.url as string;
+    // Upscales expose a preview JPEG as `url` (render-optimized.jpg) and the real file as
+    // `raw` (render-raw.png) — the one a download gives you. Prefer `raw` when present.
+    const url = str(c.raw) ?? str(c.url);
+    if (!url) return [];
     return [
       {
         kind: "completed",
@@ -214,7 +216,8 @@ function parseUpload(rec: CaptureRecord): Capture[] | null {
   // Unlike render, the upload endpoint returns the creation unwrapped.
   const c = isObj(body) && isObj(body.creation) ? body.creation : isObj(body) ? body : null;
   if (!c || !str(c.identifier)) return null;
-  if (c.tool !== "upload-reference") return [];
+  // Any creation made from an uploaded file: reference uploads ("upload-reference") and the
+  // upscaler's own upload, whose tool name hasn't been captured yet (UNVERIFIED).
   const sha = bodyFileSha(rec.request_body);
   if (!sha) return []; // page could not hash the file (too large, or not a File)
   return [{ kind: "asset_location", service: SERVICE, sha256: sha, service_asset_id: c.identifier as string, url: str(c.url) ?? "" }];
