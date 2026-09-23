@@ -139,3 +139,12 @@ Every deviation from `faible-tracking-v1-prompt.md`, dated. Newest last.
 35. **Discovery mirror kept, off by default** (popup checkbox) for adapter drift work.
 36. **Phase 2 demo uses `GET /api/v1/shots/{id}` and `faible show-shot CODE`** in place of the
     shot page, which is Phase 3 UI.
+37. **Adapters match on the normalised URL** (`new URL(url).href`). Magnific began opening its
+    Pusher socket as `wss://ak-data.magnific.com:443/…`; the literal pattern stopped matching
+    and every progress/completion message was silently dropped. Found from the discovery log.
+38. **A download closes a missed completion.** If a downloaded file's name identifies a job this
+    browser submitted and no completion was recorded, the worker emits `generation.completed`
+    (evidence `observed`) and registers the bytes under that job id. A safety net, not the
+    primary path: normally the push/poll message arrives first.
+39. **A hashed upload that no adapter recognises raises `adapter.unknown_payload`**, so a new
+    upload path shows up as drift instead of a silent gap in the chain.

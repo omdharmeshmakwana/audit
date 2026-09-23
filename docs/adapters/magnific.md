@@ -9,7 +9,7 @@ Anything not seen in that traffic is marked `UNVERIFIED`. Fixtures: `extension/s
 |---|---|
 | `www.magnific.com` | Web app (**`.com`** is live; `.ai` not seen). REST under `/app/api/...`; all calls carry `?lang=en_US&user_id=<n>` |
 | `*.freepik.com` | Same product and account (Magnific is Freepik's). Matched and attributed to `magnific`; **no traffic captured from it yet** — its endpoints are UNVERIFIED |
-| `ak-data.magnific.com` | **Render API** (`/app/api/render/v4`) and **Pusher WebSocket** (`wss://…/app/<app-key>?protocol=7`) |
+| `ak-data.magnific.com` | **Render API** (`/app/api/render/v4`) and **Pusher WebSocket** (`wss://…/app/<app-key>?protocol=7`; since 2026-09-23 the page opens it as `wss://ak-data.magnific.com:443/…` — match on the normalised URL) |
 | `pikaso.cdnpk.net` | **Outputs** `/private/production/<n>/render.<ext>?token=exp=<unix>~hmac=<sig>` — **signed**, expiring |
 | `fpkph.cdnpk.net` | PostHog proxy (`/i/v0/e/`, `/flags/`) — noise, filtered |
 | `sdk.fra-02.braze.eu`, `www.google.com/ccm`, `analytics.google.com` | Marketing telemetry — noise, filtered |
@@ -27,9 +27,10 @@ over a **Pusher WebSocket**, not polled. Pusher frames double-encode: `{"event",
 | **Submit (image)** | `POST ak-data.magnific.com/app/api/render/v4` → `{creation: {...}}` | yes (`seedream-5-pro`, text-to-image with reference) |
 | **Progress / completion** | WS `creation.created` → `creation.updated` (`status: processing` → `completed`) on channel `private-project.<project_uuid>` | yes |
 | Delete event | WS `creation.deleted` | yes |
-| **Download** | `POST /app/api/creations/download` `{creations: [<numeric id>], extension}` (empty 200), then the browser downloads the signed CDN URL with `&download=<filename>` | yes |
+| **Download** | `POST /app/api/creations/download` `{creations: [<numeric id>], extension, tool}` (empty 200), then the browser downloads the signed CDN URL with `&download=<filename>` (upscales: via `GET /app/api/creations/<numeric id>/media?redirect=1&format=original&download…`) | yes |
 | **Delete** | `PUT /app/api/projects/bulk/trash/soft-delete` `{files_external_ids: ["<numeric id>"]}` | yes |
 | Pusher auth | `POST /app/broadcasting/auth` | yes (response redacted) |
+| **Upload (upscaler)** | same endpoint, `tool: "upload"` → creation (e.g. `YMahvAeWeC`) used as the upscale's `input_image`. **Magnific keeps uploads byte-identical** (upload sha256 = the file picked, verified twice) | yes (2026-09-23) |
 | **Upload (reference)** | `POST ak-data.magnific.com/app/api/creations` multipart `{file, tool: "upload-reference"}` → 201 the creation **unwrapped** (unlike render): `{identifier, tool: "upload-reference", status: "completed", url, metadata: {original_filename}}`. The upload is itself a creation; generations reference it as `creation:<identifier>` | yes |
 | **Upscale** | `POST ak-data.magnific.com/app/api/render/v4/upscale` `{input_image: "creation:<identifier>", mode: "enhance-magnific-creative", scale, creativity, resemblance, hdr, fractality, engine, optimised, prompt, metadata: {previous: <numeric id>}}` → `{creation: {...}}` (tool `enhance`) | yes (1080 credits) |
 | Rejected submit | same endpoint → **422** `{errors: {prompt: ["…must not be greater than 2000 characters."]}}`. No creation, no credits | yes |
