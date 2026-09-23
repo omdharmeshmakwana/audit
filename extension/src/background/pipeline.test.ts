@@ -5,7 +5,7 @@ import { higgsfield } from "../adapters/higgsfield";
 import { magnific } from "../adapters/magnific";
 import type { Adapter } from "../adapters/types";
 import type { CaptureRecord } from "../shared/capture";
-import { emptyState, plan, pruneState, type PipelineState, type PlanContext } from "./pipeline";
+import { completedFromDownload, emptyState, plan, pruneState, type PipelineState, type PlanContext } from "./pipeline";
 
 const fixture = (service: string, name: string): CaptureRecord =>
   JSON.parse(readFileSync(join(__dirname, "../adapters/fixtures", service, name), "utf8")) as CaptureRecord;
@@ -112,6 +112,20 @@ describe("pipeline", () => {
   it("with no active shot the capture is stored unassigned", () => {
     const r = run(higgsfield, emptyState(), fixture("higgsfield", "submit-image.json"), { activeShotId: null });
     expect(r.events[0]!.payload.shot_id).toBeNull();
+  });
+
+  it("a download of an own job records a missed completion once; never for others' jobs", () => {
+    const state = emptyState();
+    run(magnific, state, fixture("magnific", "upscale.json")); // submitted nVvBer2YQD
+    const id = () => "x";
+    const e = completedFromDownload(state, "magnific", "nVvBer2YQD", "https://pikaso/r.png?token=[REDACTED]", "image/png", "2026-09-23T11:33:34Z", id);
+    expect(e).toMatchObject({
+      type: "generation.completed",
+      evidence: "observed",
+      payload: { service_job_id: "nVvBer2YQD", outputs: [{ service_asset_id: "nVvBer2YQD", media_type: "image" }] },
+    });
+    expect(completedFromDownload(state, "magnific", "nVvBer2YQD", "u", null, "t", id)).toBeNull(); // once
+    expect(completedFromDownload(state, "magnific", "someoneElse", "u", null, "t", id)).toBeNull();
   });
 
   it("pruneState bounds every map", () => {

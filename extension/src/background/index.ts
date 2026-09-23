@@ -12,7 +12,7 @@ import { SERVER_URL, serviceForHost, type CaptureRecord } from "../shared/captur
 import { redactUrl } from "../shared/redact";
 import { clearAssetState, fingerprintDownload, hashOutput, recordBlob, refetchDownload } from "./assets";
 import { locked } from "./lock";
-import { emptyState, plan, pruneState, type FaibleEvent, type PipelineState } from "./pipeline";
+import { completedFromDownload, emptyState, plan, pruneState, type FaibleEvent, type PipelineState } from "./pipeline";
 import { clearQueue, enqueueEvents, flush, queueState, scheduleFlush } from "./queue";
 import { apiJson, getSession, login, logout, NotLoggedIn, setActiveShot, type ActiveShot } from "./session";
 
@@ -130,11 +130,22 @@ chrome.downloads.onChanged.addListener((delta) => {
     const pipeline = await withPipeline((s) => s);
     const fp = await fingerprintDownload(item, service, refetch, pipeline, log);
     if (fp.agree === false) log(`download ${item.filename.split(/[\\/]/).pop()}: HASHES DISAGREE`);
+    const occurredAt = new Date(item.endTime ?? Date.now()).toISOString();
+    if (fp.job_id) {
+      const jobId = fp.job_id;
+      const missed = await withPipeline((s) =>
+        completedFromDownload(s, service, jobId, redactUrl(item.finalUrl || item.url), item.mime || null, occurredAt, () => crypto.randomUUID()),
+      );
+      if (missed) {
+        log(`${service}: ${jobId.slice(0, 10)} completion recorded from its download (push message was missed)`);
+        await emit([missed]);
+      }
+    }
     await emit([
       {
         event_id: crypto.randomUUID(),
         type: "download.observed",
-        occurred_at: new Date(item.endTime ?? Date.now()).toISOString(),
+        occurred_at: occurredAt,
         evidence: fp.evidence ?? "observed",
         payload: {
           download_id: crypto.randomUUID(),
@@ -154,11 +165,14 @@ chrome.downloads.onChanged.addListener((delta) => {
 // ---------------------------------------------------------------- discovery mirror (Phase 0 tool)
 
 async function mirrorToDiscovery(record: CaptureRecord): Promise<void> {
-  const s = await chrome.storage.local.get([DISCOVERY_KEY, DISCOVERY_QUEUE_KEY]);
-  if (!s[DISCOVERY_KEY]) return;
-  const q = ((s[DISCOVERY_QUEUE_KEY] as CaptureRecord[] | undefined) ?? []).concat(record).slice(-2000);
-  await chrome.storage.local.set({ [DISCOVERY_QUEUE_KEY]: q });
-  if (q.length >= 20) void flushDiscovery();
+  const size = await locked(async () => {
+    const s = await chrome.storage.local.get([DISCOVERY_KEY, DISCOVERY_QUEUE_KEY]);
+    if (!s[DISCOVERY_KEY]) return 0;
+    const q = ((s[DISCOVERY_QUEUE_KEY] as CaptureRecord[] | undefined) ?? []).concat(record).slice(-2000);
+    await chrome.storage.local.set({ [DISCOVERY_QUEUE_KEY]: q });
+    return q.length;
+  });
+  if (size >= 20) void flushDiscovery();
 }
 
 async function flushDiscovery(): Promise<void> {
@@ -171,7 +185,14 @@ async function flushDiscovery(): Promise<void> {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ records: q }),
     });
-    if (res.ok) await chrome.storage.local.set({ [DISCOVERY_QUEUE_KEY]: [] });
+    if (res.ok) {
+      // Drop only what was sent; records may have arrived meanwhile.
+      await locked(async () => {
+        const now = await chrome.storage.local.get(DISCOVERY_QUEUE_KEY);
+        const rest = ((now[DISCOVERY_QUEUE_KEY] as CaptureRecord[] | undefined) ?? []).slice(q.length);
+        await chrome.storage.local.set({ [DISCOVERY_QUEUE_KEY]: rest });
+      });
+    }
   } catch {
     /* retried on the next alarm */
   }

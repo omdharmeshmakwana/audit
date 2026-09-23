@@ -209,8 +209,10 @@ export async function fingerprintDownload(
   const out = jobId ? pipeline.outputs[`${service}:${jobId}`] : undefined;
   if (out) jobOutputSha256 = (await hashOutput(out, "filename_job", log)).sha256;
   if (refetch.ok && refetch.buf && refetch.sha256) {
-    // Register what was downloaded, at the location it came from.
-    void registerBytes(refetch.buf, refetch.sha256, [{ service, url: redactUrl(url) }], refetch.content_type ?? item.mime ?? null);
+    // Register what was downloaded, at the location it came from — and under the job id the
+    // service put in the filename, so the job's output edge can resolve to these bytes.
+    const location = { service, url: redactUrl(url), ...(jobId ? { service_asset_id: jobId } : {}) };
+    void registerBytes(refetch.buf, refetch.sha256, [location], refetch.content_type ?? item.mime ?? null);
   }
   return resolveDownloadFingerprint({ blobSha256, refetchSha256: refetch.sha256 ?? null, jobId, jobOutputSha256 });
 }

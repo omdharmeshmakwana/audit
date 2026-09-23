@@ -195,6 +195,34 @@ export function plan(record: CaptureRecord, captures: Capture[] | null, state: P
   return out;
 }
 
+/**
+ * A download of an own job's output proves the output exists. If the completion message was
+ * missed (e.g. the push channel dropped during a long job), record the completion from the
+ * download itself — evidence `observed`, output named by the job id from the filename.
+ */
+export function completedFromDownload(
+  state: PipelineState,
+  service: string,
+  jobId: string,
+  url: string,
+  mime: string | null,
+  occurredAt: string,
+  newId: () => string,
+): FaibleEvent | null {
+  if (!state.submitted[key(service, jobId)]) return null;
+  const dedupe = `${key(service, jobId)}:completed`;
+  if (state.emitted[dedupe]) return null;
+  state.emitted[dedupe] = occurredAt;
+  const media_type = mime?.startsWith("video/") ? "video" : mime?.startsWith("image/") ? "image" : null;
+  return {
+    event_id: newId(),
+    type: "generation.completed",
+    occurred_at: occurredAt,
+    evidence: "observed",
+    payload: { service, service_job_id: jobId, outputs: [{ index: 0, url, service_asset_id: jobId, media_type }], credits_cost: null },
+  };
+}
+
 /** Drop the oldest entries of each map so persisted state stays bounded. */
 export function pruneState(state: PipelineState, cap = 3000): void {
   for (const map of [state.submitted, state.emitted, state.outputs, state.uploadSlots, state.unknownSeen] as Record<string, unknown>[]) {
