@@ -105,6 +105,8 @@ class Seeder:
         locations: list[dict[str, Any]],
     ) -> str:
         sha, n = self.image(text, size, color)
+        # No phash here: seed events must stay byte-identical for idempotency. Fingerprints
+        # arrive as later asset.registered events from `faible fingerprint`.
         self.emit(
             "asset.registered",
             {

@@ -21,7 +21,9 @@ from faible.models import UserCredential
 _hasher = PasswordHasher()
 ACCESS_TTL = timedelta(minutes=15)
 REFRESH_TTL = timedelta(days=7)
-TokenType = Literal["access", "refresh"]
+WEB_TTL = timedelta(hours=12)  # httpOnly session cookie for the web UI
+TokenType = Literal["access", "refresh", "web"]
+_TTL = {"access": ACCESS_TTL, "refresh": REFRESH_TTL, "web": WEB_TTL}
 
 
 class AuthError(Exception):
@@ -118,7 +120,7 @@ def authenticate(
 
 def issue_token(user_id: uuid.UUID, typ: TokenType) -> str:
     now = datetime.now(UTC)
-    ttl = ACCESS_TTL if typ == "access" else REFRESH_TTL
+    ttl = _TTL[typ]
     claims = {"sub": str(user_id), "typ": typ, "iat": now, "exp": now + ttl}
     return jwt.encode(claims, _secret(), algorithm="HS256")
 

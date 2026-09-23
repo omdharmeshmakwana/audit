@@ -51,6 +51,16 @@ def _validation_reason(err: ValidationError) -> str:
     return f"invalid payload: {loc}: {first['msg']}"
 
 
+def _normalised(event: Event) -> str:
+    """A stored payload as the current schema would normalise it. An approved optional field
+    added later (e.g. generation.status.credits_cost) must not turn a re-sent event into a
+    conflict. Stored rows are never rewritten; this is only for the comparison."""
+    try:
+        return canonical_json(validate_payload(event.type, event.payload))
+    except (KeyError, ValidationError):
+        return canonical_json(event.payload)
+
+
 def append_events(
     session: Session,
     items: list[EventIn],
@@ -81,7 +91,7 @@ def append_events(
         if existing is not None:
             same = (
                 existing.type == item.type
-                and canonical_json(existing.payload) == canonical_json(payload)
+                and _normalised(existing) == canonical_json(payload)
                 and existing.occurred_at == item.occurred_at
             )
             results.append(

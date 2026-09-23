@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Projects{% endblock %}
+{% block main %}
+<h1>Projects</h1>
+<table>
+  <tr><th>Code</th><th>Name</th><th>Status</th></tr>
+  {% for p in projects %}
+  <tr><td><a href="/projects/{{ p.id }}">{{ p.code }}</a></td><td>{{ p.name }}</td><td>{{ p.status }}</td></tr>
+  {% else %}
+  <tr><td colspan="3" class="muted">No projects yet.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

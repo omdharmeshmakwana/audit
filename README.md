@@ -32,6 +32,13 @@ Load the extension: `chrome://extensions` → Developer mode → **Load unpacked
 ../scripts/demo_phase1.sh                    # Phase 1 demo on a throwaway database
 ```
 
+Web UI: http://localhost:8000 (log in as `artist1@studio` / `changeme`). Projects → shot page
+(versions, chain with prompt diffs, evidence, credits) → asset page (preview, hash, locations,
+similar assets, assert-link form). Also: unassigned queue, file import.
+
+Backfills (append events, never edit): `faible fingerprint`, `faible fetch-missing`.
+Readable chain in the terminal: `faible show-shot SQ01_SH010`.
+
 API: `POST /api/v1/auth/login`, `/auth/refresh`, `/auth/register`, `GET /api/v1/me`,
 `POST /api/v1/ingest/events` (bearer token). Event schema: `docs/EVENTS.md`.
 

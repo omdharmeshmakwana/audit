@@ -201,6 +201,21 @@ class ActivityOutput(Base):
     confidence: Mapped[float] = mapped_column(Float)
 
 
+class AssetSimilarity(Base):
+    """An `inferred` edge between two assets whose bytes differ but whose perceptual
+    fingerprints match (spec §2.4). Stored once per pair with `asset_a < asset_b`."""
+
+    __tablename__ = "asset_similarities"
+
+    asset_a: Mapped[uuid.UUID] = mapped_column(ForeignKey("assets.id"), primary_key=True)
+    asset_b: Mapped[uuid.UUID] = mapped_column(ForeignKey("assets.id"), primary_key=True)
+    method: Mapped[str] = mapped_column(Text)  # phash | video_phash8
+    distance: Mapped[float] = mapped_column(Float)
+    confidence: Mapped[float] = mapped_column(Float)
+    evidence: Mapped[str] = mapped_column(Text, default="inferred")
+    found_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
 class Download(Base):
     __tablename__ = "downloads"
 
@@ -336,6 +351,7 @@ DERIVED_TABLES: list[type[Base]] = [
     ActivityOutput,
     ActivityInput,
     Activity,
+    AssetSimilarity,
     AssetLocation,
     Asset,
     Entity,

@@ -20,12 +20,14 @@ from typing import Any
 from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 
+from faible.fingerprint import kind_of, match
 from faible.models import (
     Activity,
     ActivityInput,
     ActivityOutput,
     Asset,
     AssetLocation,
+    AssetSimilarity,
     Download,
     Entity,
     Event,
@@ -188,6 +190,8 @@ def asset_registered(session: Session, e: Event) -> None:
             setattr(asset, field, p[field])
     asset.stored = asset.stored or bool(p.get("stored"))
     session.flush()
+    if p.get("phash"):
+        _find_similar(session, asset, e.occurred_at)
     for loc in p.get("locations", []):
         _add_location(
             session,
@@ -199,6 +203,37 @@ def asset_registered(session: Session, e: Event) -> None:
             None,
         )
     _resolve_pending(session, asset)
+
+
+def _find_similar(session: Session, asset: Asset, at: datetime) -> None:
+    """Inferred edges (spec §2.4): compare this asset's fingerprint with every other of the
+    same kind. Deterministic in log order, so rebuild reproduces the same edges."""
+    assert asset.phash is not None
+    method = "video_phash8" if kind_of(asset.phash) == "video" else "phash"
+    others = session.scalars(
+        select(Asset).where(Asset.phash.is_not(None), Asset.id != asset.id).order_by(Asset.id)
+    )
+    for other in others:
+        m = match(asset.phash, other.phash or "")
+        if m is None:
+            continue
+        a, b = sorted([asset.id, other.id])
+        row = session.get(AssetSimilarity, (a, b))
+        if row is None:
+            session.add(
+                AssetSimilarity(
+                    asset_a=a,
+                    asset_b=b,
+                    method=method,
+                    distance=m[0],
+                    confidence=m[1],
+                    evidence="inferred",
+                    found_at=at,
+                )
+            )
+        else:
+            row.distance, row.confidence = m
+    session.flush()
 
 
 def asset_location_seen(session: Session, e: Event) -> None:

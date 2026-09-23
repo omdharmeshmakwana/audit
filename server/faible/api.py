@@ -5,28 +5,52 @@ import uuid
 from datetime import UTC, datetime
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Cookie,
+    Depends,
+    File,
+    Form,
+    Header,
+    HTTPException,
+    UploadFile,
+    status,
+)
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from faible.auth import AuthError, authenticate, decode_token, issue_token, register_user
+from faible.chain import asset_chain
 from faible.db import get_session
 from faible.events import Evidence
 from faible.ingest_asset import AssetRejected, ingest_asset
 from faible.log import EventIn, append_events
 from faible.models import Asset, Project, Shot, ShotVersion, User
-from faible.views import my_captures, project_tree, shot_detail
+from faible.storage import asset_path
+from faible.views import asset_detail, graph, my_captures, project_tree, shot_detail
 
 router = APIRouter(prefix="/api/v1")
 DbSession = Annotated[Session, Depends(get_session)]
 
 
-def current_user(session: DbSession, authorization: Annotated[str | None, Header()] = None) -> User:
-    if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "missing bearer token")
+SESSION_COOKIE = "faible_session"
+
+
+def current_user(
+    session: DbSession,
+    authorization: Annotated[str | None, Header()] = None,
+    faible_session: Annotated[str | None, Cookie()] = None,
+) -> User:
+    """Bearer access token (extension, CLI) or the web UI's httpOnly session cookie."""
     try:
-        user_id = decode_token(authorization.split(" ", 1)[1], "access")
+        if authorization and authorization.lower().startswith("bearer "):
+            user_id = decode_token(authorization.split(" ", 1)[1], "access")
+        elif faible_session:
+            user_id = decode_token(faible_session, "web")
+        else:
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "not logged in")
     except AuthError as exc:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, str(exc)) from exc
     user = session.get(User, user_id)
@@ -346,3 +370,43 @@ def post_asset(
         "new_locations": result.new_locations,
         "bytes": asset.bytes,
     }
+
+
+# ---------------------------------------------------------------- assets and graph
+
+
+@router.get("/assets/{asset_id}")
+def get_asset(asset_id: uuid.UUID, session: DbSession, user: CurrentUser) -> dict[str, Any]:
+    detail = asset_detail(session, asset_id)
+    if detail is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "no such asset")
+    return detail
+
+
+@router.get("/assets/{asset_id}/chain")
+def get_asset_chain(asset_id: uuid.UUID, session: DbSession, user: CurrentUser) -> dict[str, Any]:
+    chain = asset_chain(session, asset_id)
+    if chain is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "no such asset")
+    return chain
+
+
+@router.get("/assets/{asset_id}/file")
+def get_asset_file(asset_id: uuid.UUID, session: DbSession, user: CurrentUser) -> FileResponse:
+    asset = session.get(Asset, asset_id)
+    if asset is None or not asset.stored or not asset_path(asset.sha256).exists():
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "no local copy of this asset")
+    return FileResponse(
+        asset_path(asset.sha256),
+        media_type=asset.media_type or "application/octet-stream",
+        headers={"Cache-Control": "private, max-age=31536000, immutable"},  # content-addressed
+    )
+
+
+@router.get("/graph")
+def get_graph(
+    project_id: uuid.UUID, session: DbSession, user: CurrentUser, limit: int = 200, offset: int = 0
+) -> dict[str, Any]:
+    if session.get(Project, project_id) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "no such project")
+    return graph(session, project_id, limit=min(max(limit, 1), 1000), offset=max(offset, 0))

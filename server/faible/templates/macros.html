@@ -1,0 +1,99 @@
+{# Shared rendering: evidence badges, thumbnails, prompt diffs and the chain. #}
+
+{% macro ev(level, confidence=None) -%}
+<span class="badge ev-{{ level }}" title="evidence: {{ level }}{% if confidence is not none %}, confidence {{ '%.2f'|format(confidence) }}{% endif %}">
+  {{ level|replace('_', ' ') }}{% if confidence is not none and confidence < 1 %} · {{ '%.2f'|format(confidence) }}{% endif %}
+</span>
+{%- endmacro %}
+
+{% macro status(s) -%}<span class="pill status-{{ s }}">{{ s }}</span>{%- endmacro %}
+
+{% macro thumb(a, cls="thumb") -%}
+{% if a and a.stored and a.media_type and a.media_type.startswith('video') %}
+<a href="/assets/{{ a.id }}"><video class="{{ cls }}" src="/api/v1/assets/{{ a.id }}/file" muted preload="metadata"></video></a>
+{% elif a and a.stored %}
+<a href="/assets/{{ a.id }}"><img class="{{ cls }}" src="/api/v1/assets/{{ a.id }}/file" loading="lazy" alt="{{ a.sha256[:12] }}" /></a>
+{% elif a %}
+<a href="/assets/{{ a.id }}" class="{{ cls }} hashonly" title="Known by hash only — no local copy">hash only<br />{{ a.sha256[:8] }}</a>
+{% else %}
+<span class="{{ cls }} hashonly">unresolved</span>
+{% endif %}
+{%- endmacro %}
+
+{% macro prompt(step) -%}
+{% if step.prompt %}
+<div class="prompt">{% if step.prompt_diff %}{% for seg in step.prompt_diff %}{% if seg.op == 'insert' %}<ins>{{ seg.text }}</ins>{% elif seg.op == 'delete' %}<del>{{ seg.text }}</del>{% else %}{{ seg.text }}{% endif %}{% endfor %}{% else %}{{ step.prompt }}{% endif %}</div>
+{% if step.negative_prompt %}<div class="meta">negative: {{ step.negative_prompt }}</div>{% endif %}
+{% else %}
+<div class="meta">no prompt</div>
+{% endif %}
+{%- endmacro %}
+
+{% macro io_list(items, what) -%}
+<div class="thumbs">
+  {% for i in items %}
+  <figure>
+    {{ thumb(i.asset) }}
+    <figcaption title="{{ i.role or ('output ' ~ i.index) }}{% if i.service_asset_id %} · {{ i.service_asset_id }}{% endif %}">
+      {% if i.role %}{{ i.role }}{% else %}#{{ i.index }}{% endif %}{% if i.asset and i.asset.label %} · {{ i.asset.label }}{% endif %}
+      {% if not i.asset %}<span class="warn">{{ i.service_asset_id }}</span>{% endif %}
+    </figcaption>
+  </figure>
+  {% else %}<span class="muted">none</span>{% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro chain_view(chain) -%}
+{% if not chain %}
+<p class="muted">Nothing to show yet.</p>
+{% else %}
+<div class="sub">
+  {{ chain.steps|selectattr('type', 'equalto', 'activity')|list|length }} generation step(s)
+  {% if chain.weakest_confidence < 1 %} · weakest link {{ ev('inferred', chain.weakest_confidence) }}{% endif %}
+  {% if chain.truncated %} · <span class="warn">truncated</span>{% endif %}
+</div>
+<div class="chain">
+  {% for o in chain.origins %}
+  <div class="step origin">
+    <div class="panel">
+      <div class="head"><strong>Origin</strong> {{ ev(o.evidence) }}
+        {% if o.label %}<span class="pill">{{ o.label }}</span>{% elif not o.registered %}<span class="warn">known by hash only — made before capture, or outside the services</span>{% else %}<span class="muted">no producing generation recorded</span>{% endif %}
+      </div>
+      <div class="thumbs"><figure>{{ thumb(o) }}<figcaption class="mono">{{ o.sha256[:12] }}</figcaption></figure></div>
+    </div>
+  </div>
+  {% endfor %}
+  {% for s in chain.steps %}
+  {% if s.type == 'match' %}
+  <div class="step match">
+    <div class="panel match-card">
+      <div class="head"><strong>Same picture, different file</strong> {{ ev(s.evidence, s.confidence) }}
+        <span class="muted">{{ s.method }} distance {{ s.distance }}</span></div>
+      <div class="io">
+        {{ thumb(s.source) }}<span class="arrow">≈</span>{{ thumb(s.derived) }}
+      </div>
+      <div class="meta">{{ s.derived.sha256[:12] }} looks like {{ s.source.sha256[:12] }} — a re-encode or re-upload. Linked by fingerprint, not by hash.</div>
+    </div>
+  </div>
+  {% else %}
+  <div class="step">
+    <div class="panel">
+      <div class="head">
+        <span class="svc">{{ s.service }}</span><span class="pill">{{ s.kind }}</span><code>{{ s.model_id or '?' }}</code>
+        {{ status(s.status) }} {{ ev(s.evidence) }}
+        {% if s.credits_cost %}<span class="pill">{{ s.credits_cost }} {{ s.credits_currency }}</span>{% endif %}
+      </div>
+      <div class="meta">{{ s.at.strftime('%Y-%m-%d %H:%M:%S') }} · {{ s.captured_by or 'unknown' }}{% if s.seed %} · seed {{ s.seed }}{% endif %}{% if s.service_job_id %} · job <code>{{ s.service_job_id }}</code>{% endif %}</div>
+      {{ prompt(s) }}
+      <div class="io">
+        <div>{{ io_list(s.inputs, 'in') }}</div><span class="arrow">→</span><div>{{ io_list(s.outputs, 'out') }}</div>
+      </div>
+      {% if s.unresolved_inputs %}<div class="meta warn">{{ s.unresolved_inputs }} input(s) not linked to a known asset yet</div>{% endif %}
+      {% if s.parameters %}<details class="params"><summary>parameters</summary><pre>{{ s.parameters|tojson_sorted }}</pre></details>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{%- endmacro %}

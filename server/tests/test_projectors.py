@@ -458,3 +458,36 @@ def test_linking_an_output_to_a_shot_assigns_its_generation(session: Session) ->
     )
     session.expire_all()
     assert session.get_one(Activity, uuid.UUID(act)).shot_id == uuid.UUID(p["shot"])
+
+
+def test_perceptually_matching_assets_get_an_inferred_edge(session: Session) -> None:
+    from faible.models import AssetSimilarity
+
+    log = Log(session)
+    near_a, near_b, far = "d" * 64, "e" * 64, "f" * 64
+    log(
+        "asset.registered",
+        {"sha256": near_a, "media_type": "image/png", "phash": "c3c3c3c33c3c3c3c"},
+    )
+    log("asset.registered", {"sha256": far, "media_type": "image/png", "phash": "0f0f0f0ff0f0f0f0"})
+    # A re-encode: a few bits differ.
+    log(
+        "asset.registered",
+        {"sha256": near_b, "media_type": "image/jpeg", "phash": "c3c3c3c33c3c3c3e"},
+    )
+    (sim,) = session.scalars(select(AssetSimilarity))
+    assert {sim.asset_a, sim.asset_b} == {asset_id_for(near_a), asset_id_for(near_b)}
+    assert sim.asset_a < sim.asset_b
+    assert (sim.evidence, sim.method, sim.distance) == ("inferred", "phash", 1.0)
+    assert 0.9 < sim.confidence < 1.0
+
+
+def test_a_fingerprint_added_later_still_finds_matches(session: Session) -> None:
+    from faible.models import AssetSimilarity
+
+    log = Log(session)
+    log("asset.registered", {"sha256": "d" * 64, "phash": "c3c3c3c33c3c3c3c"})
+    log("asset.registered", {"sha256": "e" * 64})  # bytes known, no fingerprint yet
+    assert session.scalars(select(AssetSimilarity)).first() is None
+    log("asset.registered", {"sha256": "e" * 64, "phash": "c3c3c3c33c3c3c3c"})  # backfill
+    assert session.scalars(select(AssetSimilarity)).one().distance == 0.0

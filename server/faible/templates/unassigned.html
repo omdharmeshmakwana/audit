@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "macros.html" import thumb, status, ev %}
+{% block title %}Unassigned{% endblock %}
+{% block main %}
+<h1>Unassigned captures</h1>
+<div class="sub">Generations captured with no active shot. Assigning links the output to a shot (evidence <em>asserted</em>); a generation with no output (failed, cancelled, still hashing) can't be assigned.</div>
+<form method="post" action="/unassigned/assign">
+  <div class="panel form inline" style="margin-bottom:14px">
+    <select name="shot_id" required>
+      <option value="">Assign selected to…</option>
+      {% for s in shots %}<option value="{{ s.id }}">{{ s.project }} · {{ s.code }}</option>{% endfor %}
+    </select>
+    <button class="primary" type="submit">Assign</button>
+  </div>
+  <table>
+    <tr><th></th><th>Output</th><th>Generation</th><th>Prompt</th><th>By</th><th class="num">Credits</th></tr>
+    {% for r in rows %}
+    <tr>
+      <td>{% if r.out %}<input type="checkbox" name="sha256" value="{{ r.out.sha256 }}" />{% else %}<span class="muted" title="no output to link">—</span>{% endif %}</td>
+      <td>{% if r.out %}{{ thumb({'id': r.out.asset_id, 'sha256': r.out.sha256, 'stored': r.out.stored, 'media_type': r.out.media_type}) }}{% else %}<span class="thumb hashonly">no output</span>{% endif %}</td>
+      <td><strong style="text-transform:capitalize">{{ r.a.service }}</strong> {{ r.a.kind }} <code>{{ r.a.model_id }}</code> {{ status(r.a.status) }}<br /><span class="muted">{{ r.a.started_at.strftime('%Y-%m-%d %H:%M') }}</span></td>
+      <td style="max-width:420px">{{ (r.a.prompt or '')[:220] }}</td>
+      <td>{{ r.by or '—' }}</td>
+      <td class="num">{{ r.a.credits_cost if r.a.credits_cost is not none else '—' }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" class="muted">Nothing unassigned.</td></tr>
+    {% endfor %}
+  </table>
+</form>
+{% endblock %}

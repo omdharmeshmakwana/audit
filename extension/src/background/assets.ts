@@ -129,7 +129,7 @@ async function fetchHashRegister(out: StoredOutput): Promise<HashResult> {
 }
 
 /** Hash (and register) an output once; concurrent and repeated callers share the result. */
-export async function hashOutput(out: StoredOutput, method: "completion" | "filename_job", log: Log): Promise<HashResult> {
+export async function hashOutput(out: StoredOutput, method: "completion" | "filename_job" | "upload", log: Log): Promise<HashResult> {
   const known = (await load()).hashes[out.url];
   if (known?.sha256) return known;
   let p = inFlight.get(out.url);

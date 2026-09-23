@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% from "macros.html" import chain_view, thumb, status, ev %}
+{% block title %}{{ d.shot.code }}{% endblock %}
+{% block main %}
+<div class="sub"><a href="/projects/{{ project_id }}">{{ d.shot.project }}</a> / {{ d.shot.sequence }}</div>
+<h1>{{ d.shot.code }} <span class="muted">{{ d.shot.description }}</span></h1>
+<div class="sub">
+  <span class="pill">{{ d.shot.status }}</span> ·
+  {{ d.activities|length }} generation(s) · {{ d.credit_spend }} credits spent{% if d.shot.credit_budget %} of {{ d.shot.credit_budget }} budget{% endif %}
+</div>
+
+<div class="grid-shot">
+  <aside>
+    <h2>Versions</h2>
+    <div class="panel versions">
+      {% for v in d.versions|reverse %}
+      <a class="version {% if selected and selected.kind == 'version' and selected.id == v.id %}selected{% endif %}" href="/shots/{{ d.shot.id }}?version={{ v.id }}">
+        {{ thumb({'id': v.asset_id, 'sha256': v.sha256, 'stored': true, 'media_type': none}) }}
+        <div><strong>v{{ v.version_number }}</strong> {{ status(v.status) }}<br /><span class="muted">{{ v.created_by }} · {{ v.created_at.strftime('%b %d %H:%M') }}</span>
+          {% if v.notes %}<br /><span class="muted">{{ v.notes }}</span>{% endif %}</div>
+      </a>
+      {% else %}
+      <p class="muted">No versions yet. Promote a generation's output below.</p>
+      {% endfor %}
+    </div>
+
+    <h2>Generations on this shot</h2>
+    <div class="panel">
+      {% for a in d.activities|reverse %}
+      <div style="display:flex; gap:10px; margin-bottom:12px">
+        {% set out = a.outputs[0] if a.outputs else none %}
+        {% if out and out.asset_id %}
+          <a href="/shots/{{ d.shot.id }}?asset={{ out.asset_id }}">{{ thumb({'id': out.asset_id, 'sha256': out.sha256, 'stored': true, 'media_type': ('video/' if out.media_type == 'video' else 'image/')}) }}</a>
+        {% else %}<span class="thumb hashonly">{{ a.status }}</span>{% endif %}
+        <div style="min-width:0">
+          <strong style="text-transform:capitalize">{{ a.service }}</strong> {{ a.kind }} {{ status(a.status) }}<br />
+          <span class="muted">{{ a.started_at.strftime('%b %d %H:%M') }} · {{ a.captured_by }}{% if a.credits_cost %} · {{ a.credits_cost }} cr{% endif %}</span><br />
+          <span class="muted" title="{{ a.prompt }}">{{ (a.prompt or '(no prompt)')[:70] }}</span>
+          {% if out and out.sha256 %}
+          <form class="inline" method="post" action="/shots/{{ d.shot.id }}/promote" style="margin-top:4px">
+            <input type="hidden" name="sha256" value="{{ out.sha256 }}" />
+            <button type="submit">Promote to version</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
+      <p class="muted">Nothing captured for this shot yet.</p>
+      {% endfor %}
+    </div>
+  </aside>
+
+  <section>
+    <h2>
+      {% if selected and selected.kind == 'version' %}Chain for v{{ selected.version_number }}
+      {% elif selected and selected.kind == 'asset' %}Chain for the selected output
+      {% else %}Chains for this shot's generations{% endif %}
+    </h2>
+    {{ chain_view(chain) }}
+  </section>
+</div>
+{% endblock %}

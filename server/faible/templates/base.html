@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Faible{% endblock %} · Faible</title>
+    <link rel="stylesheet" href="/static/app.css" />
+  </head>
+  <body>
+    {% if user %}
+    <header class="top">
+      <a class="brand" href="/">FAIBLE</a>
+      <nav>
+        <a href="/">Projects</a>
+        <a href="/unassigned">Unassigned{% if unassigned %}<span class="count">{{ unassigned }}</span>{% endif %}</a>
+        <a href="/import">Import file</a>
+      </nav>
+      <span class="me">{{ user.display_name }}</span>
+      <a href="/logout">Log out</a>
+    </header>
+    {% endif %}
+    <main>{% block main %}{% endblock %}</main>
+  </body>
+</html>

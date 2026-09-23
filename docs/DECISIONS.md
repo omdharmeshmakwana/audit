@@ -148,3 +148,37 @@ Every deviation from `faible-tracking-v1-prompt.md`, dated. Newest last.
     primary path: normally the push/poll message arrives first.
 39. **A hashed upload that no adapter recognises raises `adapter.unknown_payload`**, so a new
     upload path shows up as drift instead of a silent gap in the chain.
+
+## 2026-09-23 — Phase 3
+
+40. **Backfill commands add knowledge by appending events.** `faible fingerprint` computes
+    pHash for stored assets that lack one and appends `asset.registered` with it (spec §3:
+    "includes phash once computed"). `faible fetch-missing` fetches bytes for assets known only
+    by hash from a *public, unsigned* location URL, verifies the sha256, stores and
+    fingerprints them. Signed/redacted URLs are skipped. Admin tools; normally the extension
+    supplies bytes (#44).
+41. **Fingerprints live in the log.** The server computes pHash at `/ingest/asset` and puts
+    it in `asset.registered`; the projector derives `asset_similarities` (inferred edges)
+    from those payloads, so `rebuild` reproduces the same edges. Seed events carry no
+    phash (they must stay byte-identical for idempotency); seed images get fingerprints
+    from `faible fingerprint`.
+42. **Match thresholds and confidence.** Image: Hamming distance ≤ 10 of 64; video: mean
+    per-frame distance ≤ 12 over 8 evenly spaced frames. Confidence = 0.99 − 0.4·d/threshold,
+    never 1.0 (perceptually identical is not byte-identical). Placeholder images that share a
+    layout match each other; the chain therefore follows only the *best* match (an older
+    asset with a producer, then smallest distance), never every edge.
+43. **Duplicate detection normalises stored payloads through the current schema**, so an
+    approved optional field (e.g. #28) doesn't turn a re-sent old event into a `conflict`.
+    Stored rows are never rewritten.
+44. **The extension registers uploaded files' bytes** by fetching the service's stored copy
+    (Higgsfield uploads CDN is public; Magnific's is signed and kept inside the extension).
+    Both were verified byte-identical to what the page hashed.
+45. **Web UI without HTMX.** Server-rendered Jinja2 with plain forms; no page needed partial
+    updates, and vendoring a JS library for none would be a dependency without a use.
+    Session: `web` JWT (12 h) in an httpOnly, SameSite=Lax cookie; cross-origin POSTs are
+    refused by Origin check. The API accepts the cookie or a bearer access token.
+46. **Asset import** (`/import`) registers a file made outside the services with evidence
+    `asserted` and location `manual`; fingerprinting proposes inferred links. This is the
+    spec's Phase 3 demo path ("re-encode a downloaded clip … upload it as a new asset").
+47. **A chain step's "at"** is the activity's start, and a match step's is the derived asset's
+    first sighting; steps are ordered oldest first.

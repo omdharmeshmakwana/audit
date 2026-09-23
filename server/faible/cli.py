@@ -7,10 +7,14 @@ faible checksum        print the derived-table checksum
 faible seed            load seed data (idempotent)
 faible events-doc      regenerate docs/EVENTS.md from faible/events.py
 faible show-shot CODE  print a shot's generations, prompts, credits and asset links
+faible fingerprint     compute pHash for stored assets that lack one (appends events)
+faible fetch-missing   fetch + verify bytes of assets known only by a public URL
 """
 
 import argparse
 import sys
+from collections.abc import Callable
+from functools import partial
 
 from faible.db import get_sessionmaker
 
@@ -116,12 +120,28 @@ def _show_shot(code: str) -> int:
     return 0
 
 
-COMMANDS = {
+def _backfill(kind: str) -> int:
+    from faible.backfill import fetch_missing, fingerprint_stored
+
+    fn = fingerprint_stored if kind == "fingerprint" else fetch_missing
+    with get_sessionmaker()() as session, session.begin():
+        report = fn(session)
+    for d in report.done:
+        print(f"  done     {d}")
+    for sk in report.skipped:
+        print(f"  skipped  {sk}")
+    print(f"{kind}: {len(report.done)} done, {len(report.skipped)} skipped")
+    return 0
+
+
+COMMANDS: dict[str, Callable[[], int]] = {
     "verify-log": _verify_log,
     "rebuild": _rebuild,
     "checksum": _checksum,
     "seed": _seed,
     "events-doc": _events_doc,
+    "fingerprint": partial(_backfill, "fingerprint"),
+    "fetch-missing": partial(_backfill, "fetch-missing"),
 }
 
 

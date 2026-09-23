@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ tree.project.code }}{% endblock %}
+{% block main %}
+<h1>{{ tree.project.name }} <span class="muted">{{ tree.project.code }}</span></h1>
+<div class="sub">
+  {{ tree.sequences|map(attribute='shots')|map('length')|sum }} shots ·
+  characters: {% for e in tree.entities %}{{ e.name }}{% if not loop.last %}, {% endif %}{% endfor %}
+</div>
+{% for seq in tree.sequences %}
+<h2>{{ seq.name }}</h2>
+<table>
+  <tr><th>Shot</th><th>Description</th><th>Status</th><th class="num">Versions</th><th class="num">Generations</th><th class="num">Credits spent</th><th>Budget</th></tr>
+  {% for s in seq.shots %}
+  {% set st = stats.get(s.id, {}) %}
+  {% set budget = budgets.get(s.id) %}
+  {% set spend = st.get('spend', 0) or 0 %}
+  <tr>
+    <td><a href="/shots/{{ s.id }}"><strong>{{ s.code }}</strong></a></td>
+    <td>{{ s.description }}</td>
+    <td><span class="pill">{{ s.status }}</span></td>
+    <td class="num">{{ st.get('versions', 0) }}</td>
+    <td class="num">{{ st.get('activities', 0) }}</td>
+    <td class="num">{{ spend|round(0)|int }}</td>
+    <td>{% if budget %}<span class="bar {% if spend > budget %}over{% endif %}"><span style="width: {{ [100, (spend / budget * 100)|round(0)]|min }}%"></span></span> <span class="muted">{{ budget|int }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endfor %}
+<p class="muted">Credits mix service units (Higgsfield and Magnific credits are not the same currency); per-service totals arrive with the credits report in Phase 4.</p>
+{% endblock %}

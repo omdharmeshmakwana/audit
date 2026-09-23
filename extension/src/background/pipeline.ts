@@ -35,7 +35,9 @@ export interface PipelineState {
 export const emptyState = (): PipelineState => ({ submitted: {}, emitted: {}, outputs: {}, uploadSlots: {}, unknownSeen: {} });
 
 export interface HashJob {
-  method: "completion";
+  /** completion: an own job's output. upload: the stored copy of a file the artist uploaded
+   *  (same bytes as the page hashed), fetched so the server can keep and fingerprint it. */
+  method: "completion" | "upload";
   output: StoredOutput;
 }
 
@@ -170,6 +172,13 @@ export function plan(record: CaptureRecord, captures: Capture[] | null, state: P
       case "upload_bytes": {
         const slot = state.uploadSlots[c.upload_url];
         if (!slot) break;
+        if (slot.public_url) {
+          const url = slot.public_url;
+          out.hashJobs.push({
+            method: "upload",
+            output: { index: 0, url, fetch_url: ctx.signedUrls[url] ?? url, service: slot.service, job_id: slot.service_asset_id, service_asset_id: slot.service_asset_id, media_type: null, at: record.captured_at },
+          });
+        }
         out.events.push(
           event(ctx, record, "asset.location_seen", "observed", {
             sha256: c.sha256,
@@ -181,6 +190,12 @@ export function plan(record: CaptureRecord, captures: Capture[] | null, state: P
         break;
       }
       case "asset_location":
+        if (c.url) {
+          out.hashJobs.push({
+            method: "upload",
+            output: { index: 0, url: c.url, fetch_url: ctx.signedUrls[c.url] ?? c.url, service: c.service, job_id: c.service_asset_id, service_asset_id: c.service_asset_id, media_type: null, at: record.captured_at },
+          });
+        }
         out.events.push(
           event(ctx, record, "asset.location_seen", "observed", {
             sha256: c.sha256,

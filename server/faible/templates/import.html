@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Import file{% endblock %}
+{% block main %}
+<h1>Import a file</h1>
+<div class="sub">For files made or changed outside Higgsfield and Magnific — a re-encode, a comp, a hand edit. Faible hashes it, keeps a copy, fingerprints it and proposes <em>inferred</em> links to anything it resembles. Recorded with evidence <em>asserted</em> under your name.</div>
+{% if error %}<div class="error">{{ error }}</div>{% endif %}
+<form class="panel" method="post" action="/import" enctype="multipart/form-data">
+  <input type="file" name="file" required accept="image/*,video/*" />
+  <button class="primary" type="submit">Import</button>
+</form>
+{% endblock %}

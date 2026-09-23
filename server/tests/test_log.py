@@ -165,3 +165,25 @@ def test_floats_and_unicode_survive_the_jsonb_round_trip(session: Session) -> No
     append_events(session, [ev], source="extension")
     session.expire_all()
     assert verify_log(session).ok
+
+
+def test_resending_an_event_stored_before_an_optional_field_existed_is_a_duplicate(
+    session: Session,
+) -> None:
+    """An event stored without a field later added as optional (approved schema growth)
+    must still be recognised as the same event, not a conflict."""
+    ev = EventIn(
+        event_id=uuid.uuid4(),
+        type="generation.status",
+        occurred_at=T0,
+        evidence="service_reported",
+        payload={"service": "higgsfield", "service_job_id": "j", "status": "running"},
+    )
+    append_events(session, [ev], source="extension")
+    # Simulate a row written by the older schema (no credits_cost key at all).
+    session.execute(text("SET LOCAL session_replication_role = replica"))
+    session.execute(text("UPDATE events SET payload = payload - 'credits_cost'"))
+    session.execute(text("SET LOCAL session_replication_role = origin"))
+    session.expire_all()
+    (r,) = append_events(session, [ev], source="extension")
+    assert r.status == "duplicate"

@@ -74,6 +74,9 @@ describe("pipeline", () => {
     put.request_body = { __blob: true, size: 1, type: "image/png", __sha256: "b".repeat(64) };
     const r = run(higgsfield, state, put);
     expect(r.events).toHaveLength(1);
+    expect(r.hashJobs).toEqual([
+      expect.objectContaining({ method: "upload", output: expect.objectContaining({ service_asset_id: "314e36aa-f94a-471d-81e3-053a93595cdb" }) }),
+    ]);
     expect(r.events[0]).toMatchObject({
       type: "asset.location_seen",
       evidence: "observed",

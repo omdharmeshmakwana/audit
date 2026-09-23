@@ -15,11 +15,11 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, BinaryIO
 
-from PIL import Image, UnidentifiedImageError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from faible.events import Evidence
+from faible.fingerprint import Fingerprint, fingerprint_file
 from faible.log import EventIn, append_events
 from faible.models import Asset, AssetLocation, asset_id_for
 from faible.storage import asset_path
@@ -40,16 +40,17 @@ class IngestedAsset:
     new_locations: int
 
 
-def _image_meta(path: str) -> dict[str, Any]:
-    try:
-        with Image.open(path) as img:
-            return {
-                "width": img.width,
-                "height": img.height,
-                "media_type": Image.MIME.get(img.format or ""),
-            }
-    except (UnidentifiedImageError, OSError):
+def _meta(fp: Fingerprint | None) -> dict[str, Any]:
+    if fp is None:
         return {}
+    return {
+        "media_type": fp.media_type,
+        "width": fp.width,
+        "height": fp.height,
+        "duration_ms": fp.duration_ms,
+        "fps": fp.fps,
+        "phash": fp.phash,
+    }
 
 
 def ingest_asset(
@@ -81,6 +82,28 @@ def ingest_asset(
         existing = session.get(Asset, asset_id_for(sha))
         now = datetime.now(UTC)
         if existing is not None and existing.registered and existing.stored:
+            if existing.phash is None:
+                # Registered before fingerprinting existed: add it now (asset.registered
+                # "includes phash once computed", spec §3).
+                meta = _meta(fingerprint_file(asset_path(sha), media_type or existing.media_type))
+                if meta.get("phash"):
+                    append_events(
+                        session,
+                        [
+                            EventIn(
+                                event_id=uuid.uuid4(),
+                                type="asset.registered",
+                                occurred_at=now,
+                                evidence=evidence,
+                                payload={
+                                    "sha256": sha,
+                                    **{k: v for k, v in meta.items() if v is not None},
+                                },
+                            )
+                        ],
+                        source="extension",
+                        actor_user_id=actor_user_id,
+                    )
             known = {
                 (loc.service, loc.url, loc.service_asset_id)
                 for loc in session.scalars(
@@ -114,7 +137,7 @@ def ingest_asset(
         path.parent.mkdir(parents=True, exist_ok=True)
         if not path.exists():
             os.replace(tmp, path)
-        meta = _image_meta(str(path))
+        meta = _meta(fingerprint_file(path, media_type))
         (result,) = append_events(
             session,
             [
@@ -128,6 +151,9 @@ def ingest_asset(
                         "media_type": media_type or meta.get("media_type"),
                         "width": meta.get("width"),
                         "height": meta.get("height"),
+                        "duration_ms": meta.get("duration_ms"),
+                        "fps": meta.get("fps"),
+                        "phash": meta.get("phash"),
                         "bytes": size,
                         "stored": True,
                         "locations": locations,

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% from "macros.html" import chain_view, thumb, ev, status %}
+{% block title %}Asset {{ d.asset.sha256[:12] }}{% endblock %}
+{% block main %}
+{% set a = d.asset %}
+<h1>Asset <span class="mono">{{ a.sha256[:16] }}…</span></h1>
+<div class="sub">{{ a.media_type or 'unknown type' }}{% if a.width %} · {{ a.width }}×{{ a.height }}{% endif %}{% if a.duration_ms %} · {{ '%.1f'|format(a.duration_ms / 1000) }} s{% endif %}{% if a.label %} · <span class="pill">{{ a.label }}</span>{% endif %}</div>
+{% if linked %}<div class="notice">Link recorded (evidence: asserted).</div>{% endif %}
+
+<div class="grid-asset">
+  <aside>
+    {% if a.stored and a.media_type and a.media_type.startswith('video') %}
+    <video class="preview" src="/api/v1/assets/{{ a.id }}/file" controls preload="metadata"></video>
+    {% elif a.stored %}
+    <img class="preview" src="/api/v1/assets/{{ a.id }}/file" alt="{{ a.sha256 }}" />
+    {% else %}
+    <div class="panel muted">No local copy: this asset is known by its hash{% if not a.registered %} only{% endif %}.</div>
+    {% endif %}
+
+    <h2>Identity</h2>
+    <div class="panel">
+      <dl class="kv">
+        <dt>sha256</dt><dd class="mono">{{ a.sha256 }}</dd>
+        <dt>evidence</dt><dd>{{ ev(a.evidence) }}</dd>
+        <dt>first seen</dt><dd>{{ a.first_seen_at.strftime('%Y-%m-%d %H:%M:%S') }}</dd>
+        <dt>bytes</dt><dd>{{ '{:,}'.format(a.bytes) if a.bytes else '—' }}</dd>
+        <dt>fingerprint</dt><dd class="mono">{{ (a.phash or '—')[:40] }}{% if a.phash and a.phash|length > 40 %}…{% endif %}</dd>
+      </dl>
+    </div>
+
+    <h2>Locations</h2>
+    <div class="panel">
+      {% for l in d.locations %}
+      <div style="margin-bottom:6px"><strong>{{ l.service }}</strong>{% if l.service_asset_id %} <code>{{ l.service_asset_id }}</code>{% endif %}<br />
+        {% if l.url %}<span class="mono muted" style="word-break:break-all">{{ l.url[:110] }}{% if l.url|length > 110 %}…{% endif %}</span>{% endif %}</div>
+      {% else %}<span class="muted">none recorded</span>{% endfor %}
+    </div>
+
+    <h2>Looks like</h2>
+    <div class="panel">
+      {% for s in d.similar %}
+      <div style="display:flex; gap:10px; align-items:center; margin-bottom:8px">
+        {{ thumb({'id': s.asset_id, 'sha256': s.sha256, 'stored': s.stored, 'media_type': s.media_type}) }}
+        <div>{{ ev(s.evidence, s.confidence) }}<br /><span class="muted">{{ s.method }} distance {{ s.distance }}</span></div>
+      </div>
+      {% else %}<span class="muted">No perceptual matches.</span>{% endfor %}
+    </div>
+
+    <h2>Assert a link</h2>
+    <div class="panel">
+      <p class="muted" style="margin-top:0">For what capture couldn't see: this file belongs to a shot, or was produced by a generation. Recorded with evidence <em>asserted</em> under your name.</p>
+      <form method="post" action="/assets/{{ a.id }}/link">
+        <select name="target" required style="width:100%; margin-bottom:8px">
+          <option value="">Choose…</option>
+          <optgroup label="Belongs to shot">
+            {% for s in shots %}<option value="shot:{{ s.id }}">{{ s.project }} · {{ s.code }}</option>{% endfor %}
+          </optgroup>
+          <optgroup label="Produced by generation">
+            {% for x in activities %}<option value="activity:{{ x.id }}">{{ x.started_at.strftime('%b %d %H:%M') }} · {{ x.service }} {{ x.kind }} · {{ (x.prompt or '')[:40] }}</option>{% endfor %}
+          </optgroup>
+        </select>
+        <input type="text" name="reason" placeholder="Why (optional)" style="width:100%; margin-bottom:8px" />
+        <button class="primary" type="submit">Record link</button>
+      </form>
+      {% for l in d.links %}
+      <div class="meta" style="margin-top:8px">{{ ev('asserted') }} {{ l.target_type }} {{ l.target_label or l.target_id|string|truncate(12, True, '…') }} — {{ l.by }}{% if l.reason %}: {{ l.reason }}{% endif %}</div>
+      {% endfor %}
+    </div>
+  </aside>
+
+  <section>
+    {% if d.versions %}
+    <h2>Shot versions</h2>
+    <div class="panel">{% for v in d.versions %}<a href="/shots/{{ v.shot_id }}">{{ v.shot_code }} v{{ v.version_number }}</a> {{ status(v.status) }}{% if not loop.last %} · {% endif %}{% endfor %}</div>
+    {% endif %}
+    {% if d.used_by %}
+    <h2>Used as input by</h2>
+    <div class="panel">{% for x in d.used_by %}<div>{{ x.started_at.strftime('%b %d %H:%M') }} · <strong>{{ x.service }}</strong> {{ x.kind }} {{ x.model_id }}{% if x.shot_code %} · {{ x.shot_code }}{% endif %}</div>{% endfor %}</div>
+    {% endif %}
+    {% if d.downloads %}
+    <h2>Downloads</h2>
+    <div class="panel">{% for dl in d.downloads %}<div><code>{{ dl.filename }}</code> — {{ dl.by }} · {{ dl.at.strftime('%b %d %H:%M') }} · via {{ dl.hash_method }}</div>{% endfor %}</div>
+    {% endif %}
+    <h2>How it was made</h2>
+    {{ chain_view(chain) }}
+  </section>
+</div>
+{% endblock %}

@@ -101,7 +101,7 @@ async function onCapture(record: CaptureRecord, signedUrls: Record<string, strin
     }),
   );
   await emit(result.events);
-  for (const job of result.hashJobs) void hashOutput(job.output, "completion", log);
+  for (const job of result.hashJobs) void hashOutput(job.output, job.method, log);
 }
 
 // ---------------------------------------------------------------- downloads
