@@ -398,3 +398,63 @@ def test_unknown_payload(session: Session) -> None:
     )
     (u,) = session.scalars(select(UnknownPayload))
     assert u.service == "magnific"
+
+
+def test_failed_status_can_carry_the_refunded_cost(session: Session) -> None:
+    log = Log(session)
+    (act,) = ids(1)
+    log(
+        "generation.requested",
+        {
+            "activity_id": act,
+            "service": "higgsfield",
+            "service_job_id": "j9",
+            "credits_cost": "1200",
+        },
+        "service_reported",
+    )
+    log(
+        "generation.status",
+        {"service": "higgsfield", "service_job_id": "j9", "status": "failed", "credits_cost": "0"},
+        "service_reported",
+    )
+    a = session.get_one(Activity, uuid.UUID(act))
+    assert (a.status, a.credits_cost) == ("failed", Decimal("0"))
+
+
+def test_status_without_cost_keeps_the_submit_cost(session: Session) -> None:
+    log = Log(session)
+    (act,) = ids(1)
+    log(
+        "generation.requested",
+        {"activity_id": act, "service": "magnific", "service_job_id": "k", "credits_cost": "100"},
+        "service_reported",
+    )
+    log("generation.status", {"activity_id": act, "status": "running"}, "service_reported")
+    assert session.get_one(Activity, uuid.UUID(act)).credits_cost == Decimal("100")
+
+
+def test_linking_an_output_to_a_shot_assigns_its_generation(session: Session) -> None:
+    """'Assign to shot' = link.asserted(output sha256 → shot); the producing activity moves."""
+    log = Log(session, actor=uuid.uuid4())
+    p = production(log)
+    (act, link) = ids(2)
+    log(
+        "generation.requested",
+        {"activity_id": act, "service": "higgsfield", "service_job_id": "u1"},
+        "service_reported",
+    )
+    log(
+        "generation.completed",
+        {"activity_id": act, "outputs": [{"index": 0, "sha256": SHA_OUT}]},
+        "service_reported",
+    )
+    log("asset.registered", {"sha256": SHA_OUT})
+    assert session.get_one(Activity, uuid.UUID(act)).shot_id is None
+    log(
+        "link.asserted",
+        {"link_id": link, "sha256": SHA_OUT, "target_type": "shot", "target_id": p["shot"]},
+        "asserted",
+    )
+    session.expire_all()
+    assert session.get_one(Activity, uuid.UUID(act)).shot_id == uuid.UUID(p["shot"])

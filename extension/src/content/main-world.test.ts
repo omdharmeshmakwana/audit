@@ -79,6 +79,20 @@ describe("page-world fetch observer", () => {
     expect(JSON.stringify({ ...rec, signed_urls: undefined })).not.toContain("deadbeef");
   });
 
+  it("hashes a file inside a multipart upload (Magnific reference upload)", async () => {
+    posted.length = 0;
+    const bytes = new TextEncoder().encode("png bytes from higgsfield");
+    const form = new FormData();
+    form.append("file", new File([bytes], "hf_x.png", { type: "image/png" }));
+    form.append("tool", "upload-reference");
+    await window.fetch("https://ak-data.magnific.com/app/api/creations", { method: "POST", body: form });
+    await settle();
+    const rec = posted.find((r) => r.url?.endsWith("/creations"));
+    const file = (rec!.request_body as { __formdata: { file: Record<string, unknown> } }).__formdata.file;
+    expect(file).toMatchObject({ __file: true, name: "hf_x.png", size: bytes.length });
+    expect(file.__sha256).toBe(createHash("sha256").update(bytes).digest("hex"));
+  });
+
   it("ignores third-party telemetry", async () => {
     posted.length = 0;
     await window.fetch("https://o123.ingest.sentry.io/api/1/envelope/");

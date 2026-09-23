@@ -8,10 +8,15 @@ from pathlib import Path
 
 import pytest
 from alembic.config import Config
+from fastapi.testclient import TestClient
 from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.orm import Session
 
 from alembic import command
+from faible.config import get_settings
+from faible.db import get_session
+from faible.main import app
+from faible.seed import seed
 
 TEST_DB_URL = os.environ.get("FAIBLE_TEST_DATABASE_URL", "postgresql+psycopg:///faible_test")
 SERVER_DIR = Path(__file__).resolve().parents[1]
@@ -41,3 +46,16 @@ def session(engine: Engine) -> Iterator[Session]:
         s.close()
         trans.rollback()
         conn.close()
+
+
+@pytest.fixture
+def client(
+    session: Session, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[TestClient]:
+    monkeypatch.setattr(get_settings(), "data_dir", tmp_path)
+    seed(session, tmp_path)
+    app.dependency_overrides[get_session] = lambda: session
+    try:
+        yield TestClient(app)
+    finally:
+        app.dependency_overrides.clear()

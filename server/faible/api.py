@@ -1,16 +1,22 @@
 """HTTP API, `/api/v1` (spec §5). Phase 1: auth and event ingest."""
 
+import json
 import uuid
-from typing import Annotated, Literal
+from datetime import UTC, datetime
+from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from faible.auth import AuthError, authenticate, decode_token, issue_token, register_user
 from faible.db import get_session
+from faible.events import Evidence
+from faible.ingest_asset import AssetRejected, ingest_asset
 from faible.log import EventIn, append_events
-from faible.models import User
+from faible.models import Asset, Project, Shot, ShotVersion, User
+from faible.views import my_captures, project_tree, shot_detail
 
 router = APIRouter(prefix="/api/v1")
 DbSession = Annotated[Session, Depends(get_session)]
@@ -138,4 +144,205 @@ def ingest_events(
             IngestResultOut(event_id=r.event_id, status=r.status, seq=r.seq, reason=r.reason)
             for r in results
         ]
+    }
+
+
+def _emit(
+    session: Session, user: User, type_: str, payload: dict[str, Any], evidence: Evidence
+) -> None:
+    """Append one server-originated event on the user's behalf; raise 422 if rejected."""
+    (r,) = append_events(
+        session,
+        [
+            EventIn(
+                event_id=uuid.uuid4(),
+                type=type_,
+                occurred_at=datetime.now(UTC),
+                evidence=evidence,
+                payload=payload,
+            )
+        ],
+        source="server",
+        actor_user_id=user.id,
+    )
+    if r.status != "accepted":
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, r.reason or r.status)
+
+
+# ---------------------------------------------------------------- projects and shots
+
+
+@router.get("/projects")
+def list_projects(session: DbSession, user: CurrentUser) -> list[dict[str, Any]]:
+    return [
+        {"id": p.id, "name": p.name, "code": p.code, "status": p.status}
+        for p in session.scalars(select(Project).order_by(Project.code))
+    ]
+
+
+@router.get("/projects/{project_id}/tree")
+def get_project_tree(
+    project_id: uuid.UUID, session: DbSession, user: CurrentUser
+) -> dict[str, Any]:
+    tree = project_tree(session, project_id)
+    if tree is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "no such project")
+    return tree
+
+
+@router.get("/shots/{shot_id}")
+def get_shot(shot_id: uuid.UUID, session: DbSession, user: CurrentUser) -> dict[str, Any]:
+    detail = shot_detail(session, shot_id)
+    if detail is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "no such shot")
+    return detail
+
+
+class VersionIn(BaseModel):
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    notes: str = ""
+
+
+@router.post("/shots/{shot_id}/versions", status_code=201)
+def promote_version(
+    shot_id: uuid.UUID, body: VersionIn, session: DbSession, user: CurrentUser
+) -> dict[str, Any]:
+    """Promote an asset to the shot's next numbered version."""
+    if session.get(Shot, shot_id) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "no such shot")
+    current = session.scalar(
+        select(func.max(ShotVersion.version_number)).where(ShotVersion.shot_id == shot_id)
+    )
+    number = (current or 0) + 1
+    version_id = uuid.uuid4()
+    _emit(
+        session,
+        user,
+        "shot_version.created",
+        {
+            "version_id": str(version_id),
+            "shot_id": str(shot_id),
+            "sha256": body.sha256,
+            "version_number": number,
+            "notes": body.notes,
+        },
+        "asserted",
+    )
+    session.commit()
+    return {"version_id": version_id, "version_number": number}
+
+
+# ---------------------------------------------------------------- the artist's own state
+
+
+class ActiveShotIn(BaseModel):
+    shot_id: uuid.UUID | None
+
+
+@router.put("/me/active-shot")
+def set_active_shot(body: ActiveShotIn, session: DbSession, user: CurrentUser) -> dict[str, Any]:
+    if body.shot_id is not None and session.get(Shot, body.shot_id) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "no such shot")
+    if user.active_shot_id != body.shot_id:
+        _emit(
+            session,
+            user,
+            "shot.active_set",
+            {"user_id": str(user.id), "shot_id": str(body.shot_id) if body.shot_id else None},
+            "observed",
+        )
+        session.commit()
+    return {"active_shot_id": body.shot_id}
+
+
+@router.get("/me/captures")
+def get_my_captures(session: DbSession, user: CurrentUser, limit: int = 10) -> dict[str, Any]:
+    return my_captures(session, user.id, min(max(limit, 1), 100))
+
+
+# ---------------------------------------------------------------- links
+
+
+class LinkIn(BaseModel):
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    target_type: Literal["activity", "shot"]
+    target_id: uuid.UUID
+    reason: str | None = None
+
+
+class LinksIn(BaseModel):
+    links: list[LinkIn] = Field(min_length=1, max_length=200)
+
+
+@router.post("/links", status_code=201)
+def assert_links(
+    body: LinksIn, session: DbSession, user: CurrentUser
+) -> dict[str, list[uuid.UUID]]:
+    """Manual assertions (evidence `asserted`). A link to a shot assigns the generations
+    that produced the asset to that shot — the extension's "Assign to shot"."""
+    ids = []
+    for link in body.links:
+        if link.target_type == "shot" and session.get(Shot, link.target_id) is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, f"no such shot {link.target_id}")
+        link_id = uuid.uuid4()
+        _emit(
+            session,
+            user,
+            "link.asserted",
+            {
+                "link_id": str(link_id),
+                "sha256": link.sha256,
+                "target_type": link.target_type,
+                "target_id": str(link.target_id),
+                "reason": link.reason,
+            },
+            "asserted",
+        )
+        ids.append(link_id)
+    session.commit()
+    return {"link_ids": ids}
+
+
+# ---------------------------------------------------------------- asset bytes
+
+
+@router.post("/ingest/asset")
+def post_asset(
+    session: DbSession,
+    user: CurrentUser,
+    file: Annotated[UploadFile, File()],
+    x_faible_sha256: Annotated[str, Header()],
+    locations: Annotated[str, Form()] = "[]",
+    media_type: Annotated[str | None, Form()] = None,
+    evidence: Annotated[Evidence, Form()] = "observed",
+) -> dict[str, Any]:
+    """Bytes + the client's sha256 (header `X-Faible-Sha256`). Rejected on mismatch."""
+    try:
+        locs = json.loads(locations)
+        if not isinstance(locs, list):
+            raise ValueError
+    except ValueError as exc:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, "locations must be a JSON list"
+        ) from exc
+    try:
+        result = ingest_asset(
+            session,
+            file.file,
+            claimed_sha256=x_faible_sha256,
+            media_type=media_type,
+            locations=locs,
+            evidence=evidence,
+            actor_user_id=user.id,
+        )
+    except AssetRejected as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+    session.commit()
+    asset = session.get_one(Asset, result.asset_id)
+    return {
+        "asset_id": result.asset_id,
+        "sha256": result.sha256,
+        "created": result.created,
+        "new_locations": result.new_locations,
+        "bytes": asset.bytes,
     }

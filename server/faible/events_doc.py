@@ -96,13 +96,14 @@ EXAMPLES: dict[str, tuple[str, dict[str, Any]]] = {
         },
     ),
     "generation.status": (
-        "A status change seen in polling or push traffic.",
+        "A status change seen in polling or push traffic. `credits_cost`, when present, is the service's revised final cost (e.g. 0 for a refunded failure).",
         {
             "activity_id": None,
             "service": "higgsfield",
-            "service_job_id": "253edf08-5200-4819-9677-5f98df466685",
-            "status": "running",
+            "service_job_id": "78945fb1-2e56-44a2-8f4f-5e621545ee78",
+            "status": "failed",
             "detail": None,
+            "credits_cost": "0",
         },
     ),
     "generation.completed": (
@@ -183,7 +184,7 @@ EXAMPLES: dict[str, tuple[str, dict[str, Any]]] = {
         {"version_id": U, "status": "submitted"},
     ),
     "link.asserted": (
-        "A human linked an asset to an activity or shot (evidence `asserted`, confidence 1.0).",
+        'A human linked an asset to an activity or shot (evidence `asserted`, confidence 1.0). Linking to a shot also assigns the generations that produced the asset to that shot (the extension\'s "Assign to shot").',
         {
             "link_id": U,
             "sha256": SHA,

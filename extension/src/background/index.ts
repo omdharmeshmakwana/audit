@@ -1,158 +1,103 @@
-// Background service worker — Phase 0 (discovery / capture-all mode).
+// Background service worker (spec §4.1).
 //
-// - Receives capture records from content-script relays.
-// - Persists them in chrome.storage.local (survives worker restarts) and flushes them
-//   in batches to the local server's /discovery/capture sink, retrying with backoff.
-// - Fingerprints assets (fingerprint.ts): completion hash, blob hash, filename → job link.
-// - Observes completed downloads, tries a direct re-fetch, and attaches the best hash.
-// - Never reads the local filesystem; keeps only the basename of a download's path.
+// capture record (page) → adapter.parse → pipeline.plan → Faible events → queue → server
+//                                                       ↘ hash jobs → /ingest/asset
+// Plus: chrome.downloads (download.observed + fingerprint), the Faible session and active
+// shot, and the optional Phase 0 discovery mirror (raw redacted traffic, off by default).
+// Never reads the local filesystem; keeps only a download's file name, never its path.
 
-import { MAX_HASH_BYTES, SERVER_URL, serviceForHost, type CaptureRecord } from "../shared/capture";
-import { sha256Hex } from "../shared/hash";
+import { adapterFor } from "../adapters";
+import { SERVER_URL, serviceForHost, type CaptureRecord } from "../shared/capture";
 import { redactUrl } from "../shared/redact";
-import { clearFingerprintState, fingerprintDownload, onRecord } from "./fingerprint";
+import { clearAssetState, fingerprintDownload, hashOutput, recordBlob, refetchDownload } from "./assets";
 import { locked } from "./lock";
-import type { DownloadFingerprint } from "./resolve";
+import { emptyState, plan, pruneState, type FaibleEvent, type PipelineState } from "./pipeline";
+import { clearQueue, enqueueEvents, flush, queueState, scheduleFlush } from "./queue";
+import { apiJson, getSession, login, logout, NotLoggedIn, setActiveShot, type ActiveShot } from "./session";
 
-const QUEUE_KEY = "discoveryQueue";
-const STATS_KEY = "discoveryStats";
-const ENABLED_KEY = "captureAllEnabled";
-const MAX_QUEUE = 5000;
-const BATCH = 50;
+const PIPELINE_KEY = "pipelineState";
+const ACTIVITY_KEY = "recentActivity";
+const DISCOVERY_KEY = "discoveryEnabled";
+const DISCOVERY_QUEUE_KEY = "discoveryQueue";
 
-interface Stats {
-  captured: number;
-  sent: number;
-  dropped: number;
-  lastError: string | null;
-  lastSentAt: string | null;
-  hosts: Record<string, number>;
-  // Writes (POST/PUT/PATCH/DELETE) and downloads, newest first: what the artist *did*,
-  // as opposed to the background polling that dominates the counters.
-  actions?: { at: string; label: string }[];
-}
+// ---------------------------------------------------------------- activity log (popup)
 
-const emptyStats = (): Stats => ({
-  captured: 0,
-  sent: 0,
-  dropped: 0,
-  lastError: null,
-  lastSentAt: null,
-  hosts: {},
-  actions: [],
-});
-
-// Writes that are polling/housekeeping, not artist actions.
-const ROUTINE_WRITE = /status-batch|liked-by|workspaces\/context|\/api\/i\/|cdn-cgi|dd\.higgsfield/;
-
-const short = (h: unknown) => (typeof h === "string" ? `${h.slice(0, 10)}…` : "none");
-
-function actionLabel(r: CaptureRecord): string | null {
-  if (r.transport === "download") {
-    const fp = r.extra.fingerprint as DownloadFingerprint | undefined;
-    const agree = fp?.agree == null ? "" : fp.agree ? ", hashes agree" : ", HASHES DISAGREE";
-    return fp?.sha256
-      ? `download ${String(r.extra.filename ?? "")} sha256 ${short(fp.sha256)} via ${fp.method} (${fp.evidence}${agree})`
-      : `download ${String(r.extra.filename ?? "")} UNHASHED`;
-  }
-  if (r.transport === "fingerprint") {
-    const job = String(r.extra.job_id ?? "").slice(0, 8);
-    return r.extra.sha256
-      ? `hashed output of job ${job} (${String(r.extra.method)}) sha256 ${short(r.extra.sha256)}`
-      : `could not hash output of job ${job}: ${String(r.extra.error)}`;
-  }
-  if (!r.method || r.method === "GET" || !r.url || ROUTINE_WRITE.test(r.url)) return null;
-  try {
-    const u = new URL(r.url);
-    return `${r.method} ${u.pathname} → ${r.status ?? "?"}`;
-  } catch {
-    return null;
-  }
-}
-
-async function getState(): Promise<{ queue: CaptureRecord[]; stats: Stats; enabled: boolean }> {
-  const s = await chrome.storage.local.get([QUEUE_KEY, STATS_KEY, ENABLED_KEY]);
-  return {
-    queue: (s[QUEUE_KEY] as CaptureRecord[] | undefined) ?? [],
-    stats: (s[STATS_KEY] as Stats | undefined) ?? emptyStats(),
-    enabled: (s[ENABLED_KEY] as boolean | undefined) ?? true,
-  };
-}
-
-/** Queue a record; resolves false when capture is switched off (record dropped). */
-function enqueue(record: CaptureRecord): Promise<boolean> {
-  return locked(async () => {
-    const { queue, stats, enabled } = await getState();
-    if (!enabled) return false;
-    queue.push(record);
-    stats.captured++;
-    try {
-      const host = new URL(record.url ?? "").hostname;
-      stats.hosts[host] = (stats.hosts[host] ?? 0) + 1;
-    } catch {
-      /* ignore */
-    }
-    const label = actionLabel(record);
-    if (label) {
-      stats.actions = [{ at: record.captured_at, label: `${record.service}: ${label}` }, ...(stats.actions ?? [])].slice(0, 15);
-    }
-    while (queue.length > MAX_QUEUE) {
-      queue.shift();
-      stats.dropped++;
-    }
-    await chrome.storage.local.set({ [QUEUE_KEY]: queue, [STATS_KEY]: stats });
-    console.log("[faible]", record.service, record.transport, record.method ?? "", record.url, record);
-    scheduleFlush(1500);
-    return true;
+function log(label: string): void {
+  console.log("[faible]", label);
+  void locked(async () => {
+    const s = await chrome.storage.local.get(ACTIVITY_KEY);
+    const list = ((s[ACTIVITY_KEY] as { at: string; label: string }[] | undefined) ?? []).slice(0, 29);
+    await chrome.storage.local.set({ [ACTIVITY_KEY]: [{ at: new Date().toISOString(), label }, ...list] });
   });
 }
 
-// ---------------------------------------------------------------- flushing
-
-let flushTimer: ReturnType<typeof setTimeout> | null = null;
-let backoffMs = 2000;
-
-function scheduleFlush(ms: number): void {
-  if (flushTimer) return;
-  flushTimer = setTimeout(() => {
-    flushTimer = null;
-    void flush();
-  }, ms);
+function describe(e: FaibleEvent): string | null {
+  const p = e.payload;
+  const job = typeof p.service_job_id === "string" ? p.service_job_id.slice(0, 10) : "—";
+  switch (e.type) {
+    case "generation.requested":
+      return `${p.service}: ${p.kind} ${p.model_id ?? ""} ${job} (${p.status})${p.credits_cost ? `, ${p.credits_cost} credits` : ""}${p.shot_id ? "" : " — UNASSIGNED"}`;
+    case "generation.status":
+      return `${p.service}: ${job} → ${p.status}`;
+    case "generation.completed":
+      return `${p.service}: ${job} completed`;
+    case "asset.location_seen":
+      return `${p.service}: upload ${String(p.service_asset_id).slice(0, 10)} = sha256 ${String(p.sha256).slice(0, 10)}…`;
+    case "download.observed":
+      return `download ${p.filename} ${p.sha256 ? `sha256 ${String(p.sha256).slice(0, 10)}… via ${p.hash_method}` : "UNHASHED"}`;
+    case "adapter.unknown_payload":
+      return `${p.service}: unknown payload at ${p.url}`;
+    default:
+      return null;
+  }
 }
 
-function flush(): Promise<void> {
+// ---------------------------------------------------------------- pipeline
+
+async function withPipeline<T>(fn: (state: PipelineState) => T): Promise<T> {
   return locked(async () => {
-    const { queue, stats } = await getState();
-    if (queue.length === 0) return;
-    const batch = queue.slice(0, BATCH);
-    try {
-      const res = await fetch(`${SERVER_URL}/discovery/capture`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ records: batch }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
-      const fresh = await getState();
-      fresh.queue.splice(0, batch.length);
-      fresh.stats.sent += batch.length;
-      fresh.stats.lastError = null;
-      fresh.stats.lastSentAt = new Date().toISOString();
-      await chrome.storage.local.set({ [QUEUE_KEY]: fresh.queue, [STATS_KEY]: fresh.stats });
-      backoffMs = 2000;
-      if (fresh.queue.length > 0) scheduleFlush(200);
-    } catch (err) {
-      stats.lastError = String(err);
-      await chrome.storage.local.set({ [STATS_KEY]: stats });
-      backoffMs = Math.min(backoffMs * 2, 60_000);
-      scheduleFlush(backoffMs);
-    }
+    const s = await chrome.storage.local.get(PIPELINE_KEY);
+    const state = { ...emptyState(), ...((s[PIPELINE_KEY] as PipelineState | undefined) ?? {}) };
+    const result = fn(state);
+    pruneState(state);
+    await chrome.storage.local.set({ [PIPELINE_KEY]: state });
+    return result;
   });
 }
 
-chrome.alarms.create("faible-flush", { periodInMinutes: 0.5 });
-chrome.alarms.onAlarm.addListener((a) => {
-  if (a.name === "faible-flush") void flush();
-});
+async function emit(events: FaibleEvent[]): Promise<void> {
+  for (const e of events) {
+    const label = describe(e);
+    if (label) log(label);
+  }
+  await enqueueEvents(events);
+}
+
+async function onCapture(record: CaptureRecord, signedUrls: Record<string, string>): Promise<void> {
+  void mirrorToDiscovery(record);
+  if (record.transport === "blob") {
+    await recordBlob(record);
+    return;
+  }
+  const adapter = adapterFor(record.service);
+  if (!adapter) return;
+  const url = record.url ?? "";
+  let captures = adapter.parse(record);
+  // Only matched endpoints can be "unknown"; everything else unparsed is simply irrelevant.
+  if (captures === null && !adapter.patterns.some((p) => p.test(url))) captures = [];
+  if (captures !== null && captures.length === 0) return;
+
+  const session = await getSession();
+  const result = await withPipeline((state) =>
+    plan(record, captures, state, {
+      activeShotId: session?.activeShot?.id ?? null,
+      signedUrls,
+      newId: () => crypto.randomUUID(),
+    }),
+  );
+  await emit(result.events);
+  for (const job of result.hashJobs) void hashOutput(job.output, "completion", log);
+}
 
 // ---------------------------------------------------------------- downloads
 
@@ -160,39 +105,13 @@ function serviceForDownload(item: chrome.downloads.DownloadItem): string {
   for (const u of [item.url, item.finalUrl, item.referrer]) {
     if (!u) continue;
     try {
-      // blob:https://higgsfield.ai/<uuid> → URL() gives origin via pathname parse.
-      const parsed = new URL(u.startsWith("blob:") ? u.slice(5) : u);
-      const svc = serviceForHost(parsed.hostname);
+      const svc = serviceForHost(new URL(u.startsWith("blob:") ? u.slice(5) : u).hostname);
       if (svc !== "unknown") return svc;
     } catch {
       /* ignore */
     }
   }
   return "unknown";
-}
-
-async function tryRefetch(item: chrome.downloads.DownloadItem): Promise<Record<string, unknown>> {
-  const url = item.finalUrl || item.url;
-  if (url.startsWith("blob:") || url.startsWith("data:")) {
-    return { attempted: false, reason: `${url.split(":")[0]} URL is not re-fetchable from the worker` };
-  }
-  if (item.totalBytes > MAX_HASH_BYTES) return { attempted: false, reason: "over 500 MB" };
-  try {
-    const res = await fetch(url, { credentials: "include" });
-    if (!res.ok) return { attempted: true, ok: false, status: res.status };
-    const buf = await res.arrayBuffer();
-    return {
-      attempted: true,
-      ok: true,
-      status: res.status,
-      bytes: buf.byteLength,
-      content_type: res.headers.get("content-type"),
-      sha256: await sha256Hex(buf),
-      matches_download_size: item.fileSize > 0 ? item.fileSize === buf.byteLength : null,
-    };
-  } catch (err) {
-    return { attempted: true, ok: false, error: String(err) };
-  }
 }
 
 chrome.downloads.onChanged.addListener((delta) => {
@@ -202,61 +121,159 @@ chrome.downloads.onChanged.addListener((delta) => {
     if (!item || item.byExtensionId === chrome.runtime.id) return;
     const service = serviceForDownload(item);
     if (service === "unknown") return; // not a service download: none of our business
-    const refetch = await tryRefetch(item);
-    const refetchSha = typeof refetch.sha256 === "string" ? refetch.sha256 : null;
-    const fingerprint = await fingerprintDownload(item, service, refetchSha, enqueue);
-    await enqueue({
-      service,
-      transport: "download",
-      captured_at: new Date().toISOString(),
-      method: "GET",
-      url: redactUrl(item.finalUrl || item.url),
-      request_headers: {},
-      response_headers: {},
-      extra: {
-        original_url: redactUrl(item.url),
-        referrer: item.referrer ? redactUrl(item.referrer) : null,
-        filename: item.filename.split(/[\\/]/).pop() ?? "",
-        mime: item.mime,
-        file_size: item.fileSize,
-        total_bytes: item.totalBytes,
-        started_at: item.startTime,
-        ended_at: item.endTime ?? null,
-        refetch,
-        fingerprint,
+    const refetch = await refetchDownload(item);
+    const pipeline = await withPipeline((s) => s);
+    const fp = await fingerprintDownload(item, service, refetch, pipeline, log);
+    if (fp.agree === false) log(`download ${item.filename.split(/[\\/]/).pop()}: HASHES DISAGREE`);
+    await emit([
+      {
+        event_id: crypto.randomUUID(),
+        type: "download.observed",
+        occurred_at: new Date(item.endTime ?? Date.now()).toISOString(),
+        evidence: fp.evidence ?? "observed",
+        payload: {
+          download_id: crypto.randomUUID(),
+          filename: item.filename.split(/[\\/]/).pop() ?? "",
+          service,
+          url: redactUrl(item.finalUrl || item.url),
+          bytes: item.fileSize > 0 ? item.fileSize : null,
+          mime: item.mime || null,
+          sha256: fp.sha256,
+          hash_method: fp.method,
+        },
       },
-    });
+    ]);
   })();
 });
 
-// ---------------------------------------------------------------- messages
+// ---------------------------------------------------------------- discovery mirror (Phase 0 tool)
 
-chrome.runtime.onMessage.addListener((msg: { type: string; record?: CaptureRecord; enabled?: boolean }, _s, reply) => {
-  if (msg.type === "capture" && msg.record) {
-    // Signed output URLs stay inside the extension: detach them before anything is queued.
-    const { signed_urls: signed = {}, ...record } = msg.record;
-    void enqueue(record).then((accepted) => {
-      if (accepted) void onRecord(record, enqueue, signed);
+async function mirrorToDiscovery(record: CaptureRecord): Promise<void> {
+  const s = await chrome.storage.local.get([DISCOVERY_KEY, DISCOVERY_QUEUE_KEY]);
+  if (!s[DISCOVERY_KEY]) return;
+  const q = ((s[DISCOVERY_QUEUE_KEY] as CaptureRecord[] | undefined) ?? []).concat(record).slice(-2000);
+  await chrome.storage.local.set({ [DISCOVERY_QUEUE_KEY]: q });
+  if (q.length >= 20) void flushDiscovery();
+}
+
+async function flushDiscovery(): Promise<void> {
+  const s = await chrome.storage.local.get(DISCOVERY_QUEUE_KEY);
+  const q = (s[DISCOVERY_QUEUE_KEY] as CaptureRecord[] | undefined) ?? [];
+  if (q.length === 0) return;
+  try {
+    const res = await fetch(`${SERVER_URL}/discovery/capture`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ records: q }),
     });
+    if (res.ok) await chrome.storage.local.set({ [DISCOVERY_QUEUE_KEY]: [] });
+  } catch {
+    /* retried on the next alarm */
+  }
+}
+
+chrome.alarms.create("faible-flush", { periodInMinutes: 0.5 });
+chrome.alarms.onAlarm.addListener((a) => {
+  if (a.name !== "faible-flush") return;
+  void flush();
+  void flushDiscovery();
+});
+
+// ---------------------------------------------------------------- messages (relay, panel, popup)
+
+interface Msg {
+  type: string;
+  record?: CaptureRecord;
+  email?: string;
+  password?: string;
+  shot?: ActiveShot | null;
+  projectId?: string;
+  sha256s?: string[];
+  shotId?: string;
+  enabled?: boolean;
+}
+
+async function state(): Promise<Record<string, unknown>> {
+  const session = await getSession();
+  const q = await queueState();
+  const s = await chrome.storage.local.get([ACTIVITY_KEY, DISCOVERY_KEY]);
+  return {
+    loggedIn: !!session,
+    user: session?.user ?? null,
+    activeShot: session?.activeShot ?? null,
+    queue: q,
+    activity: s[ACTIVITY_KEY] ?? [],
+    discovery: !!s[DISCOVERY_KEY],
+    server: SERVER_URL,
+  };
+}
+
+async function handle(msg: Msg): Promise<unknown> {
+  switch (msg.type) {
+    case "state":
+      return state();
+    case "login":
+      await login(msg.email ?? "", msg.password ?? "");
+      scheduleFlush(100);
+      return state();
+    case "logout":
+      await logout();
+      return state();
+    case "projects":
+      return apiJson("/projects");
+    case "tree":
+      return apiJson(`/projects/${msg.projectId}/tree`);
+    case "setActiveShot":
+      await setActiveShot(msg.shot ?? null);
+      return state();
+    case "captures": {
+      const c = await apiJson<{ unassigned_count: number }>("/me/captures?limit=10");
+      void chrome.action.setBadgeText({ text: c.unassigned_count ? String(c.unassigned_count) : "" });
+      return c;
+    }
+    case "assign":
+      return apiJson("/links", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          links: (msg.sha256s ?? []).map((sha256) => ({
+            sha256,
+            target_type: "shot",
+            target_id: msg.shotId,
+            reason: "assigned in extension",
+          })),
+        }),
+      });
+    case "flush":
+      await flush();
+      return state();
+    case "setDiscovery":
+      await chrome.storage.local.set({ [DISCOVERY_KEY]: !!msg.enabled });
+      return state();
+    case "reset":
+      await clearQueue();
+      await clearAssetState();
+      await chrome.storage.local.set({ [PIPELINE_KEY]: emptyState(), [ACTIVITY_KEY]: [] });
+      return state();
+    default:
+      throw new Error(`unknown message ${msg.type}`);
+  }
+}
+
+chrome.runtime.onMessage.addListener((msg: Msg, _sender, reply) => {
+  if (msg.type === "capture" && msg.record) {
+    // Signed output URLs stay inside the extension: detach them before anything is stored.
+    const { signed_urls: signed = {}, ...record } = msg.record;
+    void onCapture(record, signed);
     return false;
   }
-  if (msg.type === "status") {
-    void getState().then(({ queue, stats, enabled }) => reply({ queued: queue.length, stats, enabled }));
-    return true;
-  }
-  if (msg.type === "setEnabled") {
-    void chrome.storage.local.set({ [ENABLED_KEY]: !!msg.enabled }).then(() => reply({ ok: true }));
-    return true;
-  }
-  if (msg.type === "flush") {
-    void flush().then(() => reply({ ok: true }));
-    return true;
-  }
-  if (msg.type === "clear") {
-    void locked(() => chrome.storage.local.set({ [QUEUE_KEY]: [], [STATS_KEY]: emptyStats() }))
-      .then(clearFingerprintState)
-      .then(() => reply({ ok: true }));
-    return true;
-  }
-  return false;
+  handle(msg).then(
+    (value) => reply({ ok: true, value }),
+    (err: unknown) =>
+      reply({
+        ok: false,
+        error: err instanceof NotLoggedIn ? "not logged in" : err instanceof Error ? err.message : String(err),
+      }),
+  );
+  return true;
 });

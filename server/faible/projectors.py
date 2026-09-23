@@ -305,6 +305,8 @@ def generation_status(session: Session, e: Event) -> None:
     activity.status = e.payload["status"]
     if activity.status in TERMINAL:
         activity.ended_at = e.occurred_at
+    if e.payload.get("credits_cost") is not None:
+        activity.credits_cost = _dec(e.payload["credits_cost"])
     session.flush()
 
 
@@ -534,6 +536,13 @@ def link_asserted(session: Session, e: Event) -> None:
         )
     )
     session.flush()
+    if p["target_type"] == "shot":
+        # "Assign to shot": the generations that produced this asset now belong to the shot.
+        producing = select(ActivityOutput.activity_id).where(ActivityOutput.asset_id == asset.id)
+        session.execute(
+            update(Activity).where(Activity.id.in_(producing)).values(shot_id=_uuid(p["target_id"]))
+        )
+        session.flush()
 
 
 def adapter_unknown_payload(session: Session, e: Event) -> None:

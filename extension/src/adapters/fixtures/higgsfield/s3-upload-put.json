@@ -1,0 +1,27 @@
+{
+ "service": "higgsfield",
+ "transport": "xhr",
+ "captured_at": "2026-09-23T09:31:28.964Z",
+ "page_url": "https://higgsfield.ai/ai/image?model=nano-banana-2",
+ "method": "PUT",
+ "url": "https://fast-and-furious-input-prod-20250325165756276100000002.s3.amazonaws.com/user_36mMlkuUFLoVEvOM0icTtFFDdlE/314e36aa-f94a-471d-81e3-053a93595cdb.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=[REDACTED]&X-Amz-Date=20260923T093120Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=content-type%3Bhost&X-Amz-Security-Token=[REDACTED]&X-Amz-Signature=[REDACTED]",
+ "status": 200,
+ "request_headers": {
+  "content-type": "image/png"
+ },
+ "request_body": {
+  "__blob": true,
+  "size": 1674058,
+  "type": "image/png"
+ },
+ "response_headers": {
+  "content-length": "0",
+  "etag": "\"21c1c5c65d4514f39ad50ce59212cc11\""
+ },
+ "response_body": "",
+ "extra": {
+  "duration_ms": 8386,
+  "json": false,
+  "truncated": false
+ }
+}

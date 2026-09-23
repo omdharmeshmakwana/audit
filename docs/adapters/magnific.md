@@ -30,7 +30,7 @@ over a **Pusher WebSocket**, not polled. Pusher frames double-encode: `{"event",
 | **Download** | `POST /app/api/creations/download` `{creations: [<numeric id>], extension}` (empty 200), then the browser downloads the signed CDN URL with `&download=<filename>` | yes |
 | **Delete** | `PUT /app/api/projects/bulk/trash/soft-delete` `{files_external_ids: ["<numeric id>"]}` | yes |
 | Pusher auth | `POST /app/broadcasting/auth` | yes (response redacted) |
-| **Upload (reference)** | `POST ak-data.magnific.com/app/api/creations` multipart `{file, tool: "upload-reference"}` → 201 `{creation: {identifier, tool: "upload-reference", status: "completed", url, metadata: {original_filename}}}`. The upload is itself a creation; generations reference it as `creation:<identifier>` | yes |
+| **Upload (reference)** | `POST ak-data.magnific.com/app/api/creations` multipart `{file, tool: "upload-reference"}` → 201 the creation **unwrapped** (unlike render): `{identifier, tool: "upload-reference", status: "completed", url, metadata: {original_filename}}`. The upload is itself a creation; generations reference it as `creation:<identifier>` | yes |
 | **Upscale** | `POST ak-data.magnific.com/app/api/render/v4/upscale` `{input_image: "creation:<identifier>", mode: "enhance-magnific-creative", scale, creativity, resemblance, hdr, fractality, engine, optimised, prompt, metadata: {previous: <numeric id>}}` → `{creation: {...}}` (tool `enhance`) | yes (1080 credits) |
 | Rejected submit | same endpoint → **422** `{errors: {prompt: ["…must not be greater than 2000 characters."]}}`. No creation, no credits | yes |
 | Video cost estimate | `POST /app/api/video/simulate/generate` → `clips[].creditsCost`, `totalCreditsCost` | yes |

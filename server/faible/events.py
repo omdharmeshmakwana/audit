@@ -176,6 +176,9 @@ class GenerationRequested(Payload):
 class GenerationStatus(ActivityRef):
     status: ActivityStatus
     detail: str | None = None
+    # Final cost when the service revises it, e.g. a refunded failure (Higgsfield job_cost 0).
+    # Added after Phase 1 with the user's approval (DECISIONS #28).
+    credits_cost: Decimal | None = None
 
 
 class GenerationCompleted(ActivityRef):

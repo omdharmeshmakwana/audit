@@ -106,3 +106,36 @@ Every deviation from `faible-tracking-v1-prompt.md`, dated. Newest last.
 27. **macOS marks files in `server/.venv` hidden, and Python 3.13+ skips hidden `.pth` files**,
     which silently breaks the editable install. Tests set `pythonpath = ["."]`; the CLI is run
     as `python -m faible.cli` from `server/` (or `chflags nohidden` the `__editable__*` files).
+
+## 2026-09-23 — Phase 2
+
+28. **`generation.status` gained an optional `credits_cost`** (approved by the user, §12). A
+    failed Higgsfield job is refunded (`job_cost: 0`); without this the submit-time cost
+    would overstate spend.
+29. **Login is in the toolbar popup, not the in-page side panel.** The spec puts login in the
+    panel, but key presses on higgsfield.ai / magnific.com are observable by those sites'
+    scripts even inside a closed Shadow DOM. The panel shows "log in from the toolbar"
+    instead; everything else in §4.1 (shot selector, last 10, unassigned counter, bulk
+    assign) is in the panel.
+30. **"Assign to shot" reuses `link.asserted`** (user's choice over a new
+    `activity.shot_assigned` event). Assigning a capture links its output asset to the shot;
+    the projector then sets `shot_id` on the activities that produced that asset. A
+    generation with no output (failed, cancelled, still hashing) cannot be assigned; the
+    panel disables it and says why.
+31. **Host permissions narrowed** from `<all_urls>` (Phase 0, #6) to the service sites, their
+    output and upload CDNs (`d8j0ntlcm91z4` / `d2ol7oe51mr4n9.cloudfront.net`,
+    `*.cdnpk.net`) and `localhost:8000`. If a service moves its CDN, hashing fails visibly
+    ("could not hash output …") rather than silently.
+32. **Uploaded inputs are located, not stored.** The page hashes the upload (a Blob cannot
+    cross `chrome.runtime` messaging), and the worker emits `asset.location_seen`
+    (sha256 + service media/creation id). Outputs and re-fetchable downloads are stored via
+    `/ingest/asset`. An input known only by hash is still a full node in the graph.
+33. **Status and completion events only for jobs submitted from this browser.** Shared
+    workspace: other artists' jobs appear in history, notifications and project channels;
+    their own extensions attribute them. Outputs of all jobs are remembered locally so a
+    download can still be matched by filename.
+34. **Responses are cloned the moment they resolve** (before the page reads the body), found
+    when request-body hashing added an `await` ahead of the clone.
+35. **Discovery mirror kept, off by default** (popup checkbox) for adapter drift work.
+36. **Phase 2 demo uses `GET /api/v1/shots/{id}` and `faible show-shot CODE`** in place of the
+    shot page, which is Phase 3 UI.

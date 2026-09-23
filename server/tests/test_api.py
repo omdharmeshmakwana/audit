@@ -1,32 +1,12 @@
 """HTTP: login and batch ingest."""
 
 import uuid
-from collections.abc import Iterator
-from pathlib import Path
 
-import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from faible.config import get_settings
-from faible.db import get_session
-from faible.main import app
 from faible.models import Event, Project
-from faible.seed import seed
-
-
-@pytest.fixture
-def client(
-    session: Session, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> Iterator[TestClient]:
-    monkeypatch.setattr(get_settings(), "data_dir", tmp_path)
-    seed(session, tmp_path)
-    app.dependency_overrides[get_session] = lambda: session
-    try:
-        yield TestClient(app)
-    finally:
-        app.dependency_overrides.clear()
 
 
 def login(

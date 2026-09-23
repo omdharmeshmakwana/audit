@@ -1,0 +1,31 @@
+{
+ "service": "higgsfield",
+ "transport": "fetch",
+ "captured_at": "2026-09-23T07:39:24.160Z",
+ "page_url": "https://higgsfield.ai/generate/video",
+ "method": "PUT",
+ "url": "https://fnf-api-gw.higgsfield.ai/fnf/jobs/0ca6024d-4528-43c9-bb34-2244cec10115/cancel",
+ "status": 200,
+ "request_headers": {
+  "accept-language": "en",
+  "authorization": "[REDACTED]",
+  "baggage": "sentry-environment=production,sentry-release=5da87d73684c93dc627ab2e298a49edf6fe8c77e,sentry-public_key=381a4c00affffdbcd21f746baa2cc263,sentry-trace_id=089e57912228429ebd665057a75bf8a6,sentry-org_id=4509169762697216,sentry-transaction=%2F_private%2Fgenerate%2F%24mode%2F,sentry-sampled=false,sentry-sample_rand=0.7046560970511938,sentry-sample_rate=0.0001",
+  "content-type": "application/json",
+  "sentry-trace": "089e57912228429ebd665057a75bf8a6-be4800b155888cb2-0",
+  "traceparent": "00-089e57912228429ebd665057a75bf8a6-aa6c64348f796782-00",
+  "x-datadome-clientid": "Wg4xtmbxn75orVtR1zYRRqMlDKAW4C_bOovfVqmCVanuc6Hy5NZlvMVMxfEq~6W9MWCEPUKf11CYKANPpf7ORJwiPGJrBl1M6NT1YjioSa5estQ5EVYmXH4X0HKIBKXi"
+ },
+ "request_body": null,
+ "response_headers": {
+  "content-length": "16",
+  "content-type": "application/json"
+ },
+ "response_body": {
+  "success": true
+ },
+ "extra": {
+  "duration_ms": 677,
+  "json": true,
+  "truncated": false
+ }
+}

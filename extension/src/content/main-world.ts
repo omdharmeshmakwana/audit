@@ -127,6 +127,47 @@ function describeRequestBody(body: unknown): unknown {
   return { __unknown_body: Object.prototype.toString.call(body) };
 }
 
+// ---------------------------------------------------------------- file hashing
+//
+// Uploads (Higgsfield S3 PUT, Magnific multipart) and media Blobs behind object URLs are
+// hashed in the page: the bytes are right here, and the worker could never get them (a
+// Blob can't cross chrome.runtime messaging). Blobs are immutable, so reading one never
+// disturbs the page's own use of it. One hash per Blob, however many times it's used.
+
+const blobHashes = new WeakMap<Blob, Promise<string>>();
+
+function hashBlob(blob: Blob): Promise<string> | null {
+  if (blob.size === 0 || blob.size > MAX_HASH_BYTES) return null;
+  let p = blobHashes.get(blob);
+  if (!p) {
+    p = blob.arrayBuffer().then(sha256Hex);
+    blobHashes.set(blob, p);
+  }
+  return p;
+}
+
+/** `describeRequestBody` plus `__sha256` on each file (Blob body, or Files in FormData). */
+async function describeWithFileHashes(body: unknown): Promise<unknown> {
+  const described = describeRequestBody(body);
+  try {
+    if (body instanceof Blob && described && typeof described === "object") {
+      const sha = await hashBlob(body);
+      if (sha) (described as Record<string, unknown>).__sha256 = sha;
+    } else if (body instanceof FormData && described && typeof described === "object") {
+      const form = (described as { __formdata: Record<string, Record<string, unknown>> }).__formdata;
+      for (const [k, v] of body.entries()) {
+        if (v instanceof Blob && form[k]) {
+          const sha = await hashBlob(v);
+          if (sha) form[k].__sha256 = sha;
+        }
+      }
+    }
+  } catch {
+    /* unhashable: record the upload without a hash */
+  }
+  return described;
+}
+
 function headersToObject(h: HeadersInit | Headers | undefined | null): Record<string, string> {
   const out: Record<string, string> = {};
   if (!h) return out;
@@ -154,6 +195,7 @@ const origFetch = window.fetch;
 async function observeFetch(
   input: RequestInfo | URL,
   init: RequestInit | undefined,
+  // A clone taken the instant the response resolved, before the page can read the body.
   responsePromise: Promise<Response>,
   started: number,
 ): Promise<void> {
@@ -164,7 +206,7 @@ async function observeFetch(
   const requestHeaders = { ...headersToObject(req?.headers), ...headersToObject(init?.headers) };
 
   let requestBody: unknown;
-  if (init?.body !== undefined) requestBody = describeRequestBody(init.body);
+  if (init?.body !== undefined) requestBody = await describeWithFileHashes(init.body);
   else if (req && req.body) {
     try {
       requestBody = parseBody(await req.clone().text()).body;
@@ -201,7 +243,7 @@ async function observeFetch(
   };
 
   if (/text\/event-stream|ndjson|x-ndjson/i.test(ctype) && res.body) {
-    const reader = res.clone().body!.getReader();
+    const reader = res.body!.getReader();
     const dec = new TextDecoder();
     let chunkIndex = 0;
     for (;;) {
@@ -229,7 +271,7 @@ async function observeFetch(
   let parsed: ReturnType<typeof parseBody> | null = null;
   if (isJsonType || /^text\//.test(ctype) || ctype === "") {
     try {
-      parsed = parseBody(await res.clone().text());
+      parsed = parseBody(await res.text());
     } catch {
       parsed = null;
     }
@@ -251,7 +293,10 @@ window.fetch = function faibleFetch(this: unknown, input: RequestInfo | URL, ini
   const started = Date.now();
   const p = origFetch.call(this ?? window, input, init);
   try {
-    void observeFetch(input, init, p, started).catch(() => undefined);
+    // Registered before the page's own `.then`/`await`, so it runs first and the clone
+    // exists before the page consumes the body. The page gets `p` itself, untouched.
+    const cloned = p.then((r) => r.clone());
+    void observeFetch(input, init, cloned, started).catch(() => undefined);
   } catch {
     /* never break the page */
   }
@@ -264,7 +309,6 @@ interface XhrMeta {
   method: string;
   url: string;
   headers: Record<string, string>;
-  body?: unknown;
   started: number;
 }
 const xhrMeta = new WeakMap<XMLHttpRequest, XhrMeta>();
@@ -292,7 +336,7 @@ XHR.send = function (this: XMLHttpRequest, body?: Document | XMLHttpRequestBodyI
   const m = xhrMeta.get(this);
   if (m && !isNoise(m.url)) {
     try {
-      m.body = describeRequestBody(body);
+      const hashedBody = describeWithFileHashes(body);
       m.started = Date.now();
       this.addEventListener("loadend", () => {
         try {
@@ -310,17 +354,21 @@ XHR.send = function (this: XMLHttpRequest, body?: Document | XMLHttpRequestBodyI
             extra = { ...extra, body_skipped: `responseType=${this.responseType}` };
           }
           if (!/json/i.test(ctype) && m.method === "GET" && STATIC_TYPE.test(ctype)) return;
-          post({
-            transport: "xhr",
-            method: m.method,
-            url: m.url,
-            status: this.status,
-            request_headers: m.headers,
-            request_body: m.body,
-            response_headers: parseXhrHeaders(this.getAllResponseHeaders()),
-            response_body: responseBody,
-            extra,
-          });
+          const status = this.status;
+          const responseHeaders = parseXhrHeaders(this.getAllResponseHeaders());
+          void hashedBody.then((requestBody) =>
+            post({
+              transport: "xhr",
+              method: m.method,
+              url: m.url,
+              status,
+              request_headers: m.headers,
+              request_body: requestBody,
+              response_headers: responseHeaders,
+              response_body: responseBody,
+              extra,
+            }),
+          );
         } catch {
           /* ignore */
         }
@@ -406,7 +454,6 @@ if (typeof window.EventSource === "function") {
 // The page gets the original URL back untouched; hashing happens after, asynchronously.
 
 const HASHABLE_BLOB = /^(image|video|audio)\/|^application\/octet-stream$|^$/i;
-const blobHashes = new WeakMap<Blob, Promise<string>>();
 const origCreateObjectURL = URL.createObjectURL.bind(URL);
 
 URL.createObjectURL = function faibleCreateObjectURL(obj: Blob | MediaSource): string {
@@ -422,12 +469,7 @@ URL.createObjectURL = function faibleCreateObjectURL(obj: Blob | MediaSource): s
           extra: { blob_url: blobUrl, size: obj.size, type: obj.type, sha256: null, skipped: "over 500 MB" },
         });
       } else {
-        let p = blobHashes.get(obj);
-        if (!p) {
-          p = obj.arrayBuffer().then(sha256Hex);
-          blobHashes.set(obj, p);
-        }
-        p.then(
+        hashBlob(obj)?.then(
           (sha256) =>
             post({
               transport: "blob",
