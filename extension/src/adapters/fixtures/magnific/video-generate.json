@@ -1,0 +1,205 @@
+{
+ "service": "magnific",
+ "transport": "fetch",
+ "captured_at": "2026-09-23T08:49:38.110Z",
+ "page_url": "https://www.magnific.com/app/ai-video-generator",
+ "method": "POST",
+ "url": "https://www.magnific.com/app/api/video/generate?return_creations=true&lang=en_US&user_id=225502283",
+ "status": 200,
+ "request_headers": {
+  "accept": "application/json",
+  "baggage": "sentry-environment=production,sentry-release=pikaso%4017333fe,sentry-public_key=63e25bc4027247c286e329926f10a698,sentry-trace_id=66e958ab337643fab0c2235ba1cbd94f,sentry-sampled=false,sentry-sample_rand=0.5497267459261748,sentry-sample_rate=0.001",
+  "content-type": "application/json",
+  "sentry-trace": "66e958ab337643fab0c2235ba1cbd94f-a56fca5f25cc63b8-0",
+  "x-correlation-id": "109052b3-d95a-4eea-a2f7-0584d79681c2",
+  "x-folder-reference": "cf223cc5-b976-4479-8f8a-e279121e5648",
+  "x-project-reference": "cf223cc5-b976-4479-8f8a-e279121e5648",
+  "x-request-origin": "video-generator-pikaso-web",
+  "x-xsrf-token": "[REDACTED]"
+ },
+ "request_body": {
+  "force_credits": true,
+  "video": {
+   "clips": [
+    {
+     "api": "kling",
+     "aspectRatio": "9:16",
+     "boardUuid": null,
+     "cameraMotion": "",
+     "duration": 5,
+     "extraParameters": {
+      "shotAngle": "default",
+      "shotSize": "default",
+      "style": "default"
+     },
+     "family": "1fa57f9a-63bf-487e-aa1b-a01f9e07e03b",
+     "mode": "omni3",
+     "model": "kling",
+     "name": "an animation of the poster @img1 ",
+     "negativePrompt": "",
+     "position": 0,
+     "prompt": "an animation of the poster @img1 ",
+     "promptEnhanced": false,
+     "promptType": "basic",
+     "references": [
+      {
+       "name": "img1",
+       "type": "image",
+       "url": "creation:gOP30uFSXO"
+      }
+     ],
+     "resolution": "1080p",
+     "slug": "kling-omni3",
+     "videoPreset": "custom",
+     "voices": [],
+     "withSoundEffects": true
+    }
+   ],
+   "family": "1fa57f9a-63bf-487e-aa1b-a01f9e07e03b"
+  }
+ },
+ "response_headers": {
+  "access-control-allow-credentials": "true",
+  "access-control-allow-origin": "https://www.magnific.com",
+  "access-control-expose-headers": "X-Request-Id",
+  "alt-svc": "h3=\":443\"; ma=93600",
+  "cache-control": "no-cache, private",
+  "content-encoding": "gzip",
+  "content-length": "1229",
+  "content-type": "application/json",
+  "date": "Wed, 23 Sep 2026 08:49:38 GMT",
+  "link": "<https://cdn.magnific.com>; rel=preconnect; crossorigin",
+  "quic-version": "0x00000001",
+  "strict-transport-security": "max-age=31536000 ; includeSubDomains ; preload",
+  "vary": "Origin, Accept-Encoding",
+  "x-ratelimit-limit": "50",
+  "x-ratelimit-remaining": "48",
+  "x-request-id": "ak-cd71bf3279db4fc55ee921422d5d39fa",
+  "x-session-user-id": "[REDACTED]"
+ },
+ "response_body": {
+  "data": {
+   "creations": [
+    {
+     "conversions": {
+      "png": null,
+      "svg": null
+     },
+     "created_at": "2026-09-23T08:49:37.000000Z",
+     "date_for_humans": "1 second ago",
+     "expectTime": 0,
+     "family": "1fa57f9a-63bf-487e-aa1b-a01f9e07e03b",
+     "folder": null,
+     "folder_reference": "cf223cc5-b976-4479-8f8a-e279121e5648",
+     "id": 3630150653,
+     "identifier": "iGXTTxa3uK",
+     "is_last": null,
+     "is_watermarked": false,
+     "job": null,
+     "large_preview": null,
+     "metadata": {
+      "api": "kling",
+      "aspectRatio": "9:16",
+      "boardUuid": null,
+      "cameraMotion": "",
+      "client_type": "pro_forcing_credits",
+      "creditLedger": [
+       {
+        "credits": 575,
+        "creditsEstimated": 575,
+        "occurredAt": "2026-09-23T08:49:37+00:00",
+        "transactionId": "acb18740-c092-472b-b7c1-ad259e734639",
+        "type": "consume"
+       }
+      ],
+      "creditLedgerTotals": {
+       "credits": 575,
+       "creditsEstimated": 575,
+       "unlimitedCredits": 0
+      },
+      "duration": 5,
+      "expectedGenerationTime": 249,
+      "expectedGenerationTimeParameterized": 355,
+      "expectedQueuedTime": 12,
+      "expectedQueuedTimeParameterized": 13,
+      "extraParameters": {
+       "shotAngle": "default",
+       "shotSize": "default",
+       "style": "default"
+      },
+      "family": "1fa57f9a-63bf-487e-aa1b-a01f9e07e03b",
+      "fast_track": false,
+      "featureName": "pikaso-video-ai_video_generator-kling_omni_3_pro_audio",
+      "is_unlimited_mode": false,
+      "mediaCollection": [],
+      "mode": "omni3",
+      "model": "kling",
+      "multiplier": 5,
+      "name": "an animation of the poster @img1 ",
+      "negativePrompt": "",
+      "p_alloc": 1,
+      "platform": "web",
+      "position": 0,
+      "projects_folder_reference": "cf223cc5-b976-4479-8f8a-e279121e5648",
+      "projects_project_reference": "cf223cc5-b976-4479-8f8a-e279121e5648",
+      "prompt": "an animation of the poster @img1 ",
+      "promptEnhanced": false,
+      "promptType": "basic",
+      "references": [
+       {
+        "creationId": "gOP30uFSXO",
+        "name": "img1",
+        "type": "image",
+        "url": "https://pikaso.cdnpk.net/private/production/5198744956/upload.png?token=[REDACTED]"
+       }
+      ],
+      "request_id": "ak-cd71bf3279db4fc55ee921422d5d39fa",
+      "resolution": "1080p",
+      "rollbackCredits": {
+       "credits": 5,
+       "mode": "",
+       "tool": "video-generator",
+       "transactionId": "acb18740-c092-472b-b7c1-ad259e734639",
+       "userId": "173618012"
+      },
+      "slug": "kling-omni3",
+      "status": "processing",
+      "tags": [
+       "Kling 3.0 Omni",
+       "5 sec",
+       "9:16",
+       "resolution:1080p"
+      ],
+      "transactionId": "acb18740-c092-472b-b7c1-ad259e734639",
+      "unlimited": false,
+      "url": null,
+      "userId": 173618012,
+      "voices": [],
+      "withSoundEffects": true
+     },
+     "nsfw": false,
+     "persisted": true,
+     "preview": null,
+     "properties": null,
+     "public": 0,
+     "raw": null,
+     "status": "queued",
+     "stored": false,
+     "tool": "video-generator",
+     "url": null,
+     "user_id": 173618012,
+     "user_tags": [],
+     "visible": 1,
+     "webUrl": "https://www.magnific.com/app/creation/iGXTTxa3uK"
+    }
+   ]
+  },
+  "message": "Video generation started successfully",
+  "success": true
+ },
+ "extra": {
+  "duration_ms": 945,
+  "json": true,
+  "truncated": false
+ }
+}

@@ -1,0 +1,338 @@
+{
+ "service": "higgsfield",
+ "transport": "fetch",
+ "captured_at": "2026-09-23T07:39:13.181Z",
+ "page_url": "https://higgsfield.ai/generate/video",
+ "method": "POST",
+ "url": "https://fnf-api-gw.higgsfield.ai/fnf/jobs/v2/cinematic_studio_video_4_0",
+ "status": 200,
+ "request_headers": {
+  "accept-language": "en",
+  "authorization": "[REDACTED]",
+  "baggage": "sentry-environment=production,sentry-release=5da87d73684c93dc627ab2e298a49edf6fe8c77e,sentry-public_key=381a4c00affffdbcd21f746baa2cc263,sentry-trace_id=089e57912228429ebd665057a75bf8a6,sentry-org_id=4509169762697216,sentry-transaction=%2F_private%2Fgenerate%2F%24mode%2F,sentry-sampled=false,sentry-sample_rand=0.7046560970511938,sentry-sample_rate=0.0001",
+  "content-type": "application/json",
+  "hf-surface": "cinema_studio",
+  "sentry-trace": "089e57912228429ebd665057a75bf8a6-860c77495b744631-0",
+  "traceparent": "00-089e57912228429ebd665057a75bf8a6-ade3098d936369f5-00",
+  "x-datadome-clientid": "McJ8vjLbIQc0HMjqXP2oXlqmAoX8W7fzzJhod0syS9I8KBcByj8M8mSJimWxRuPLDuuWU0dQA~QyE4WKvjDs00lB99jAFqo1SgDh7hDfyQF4et2j0U~rTz1SV5NVwfgR"
+ },
+ "request_body": {
+  "params": {
+   "aspect_ratio": "1:1",
+   "batch_size": 1,
+   "bitrate_mode": "high",
+   "duration": 4,
+   "enhance_prompt": true,
+   "generate_audio": true,
+   "height": 480,
+   "medias": [
+    {
+     "data": {
+      "id": "3e7ceabb-07a5-4899-94e0-b5813e9db3f8",
+      "ipCheckFinished": true,
+      "ipStatus": "uploaded",
+      "isFaceDetected": null,
+      "type": "media_input",
+      "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/3e7ceabb-07a5-4899-94e0-b5813e9db3f8_resize.jpg"
+     },
+     "role": "image"
+    },
+    {
+     "data": {
+      "id": "8e1cffa3-c7f3-453f-95be-4ddbde38fa5f",
+      "ipCheckFinished": true,
+      "ipStatus": "uploaded",
+      "isFaceDetected": null,
+      "type": "media_input",
+      "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/8e1cffa3-c7f3-453f-95be-4ddbde38fa5f_resize.jpg"
+     },
+     "role": "image"
+    },
+    {
+     "data": {
+      "id": "55d0b5cc-9e78-4152-b778-1a0d4c5684fd",
+      "ipCheckFinished": true,
+      "ipStatus": "uploaded",
+      "isFaceDetected": null,
+      "type": "media_input",
+      "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/55d0b5cc-9e78-4152-b778-1a0d4c5684fd_resize.jpg"
+     },
+     "role": "image"
+    },
+    {
+     "data": {
+      "id": "2bf3d695-9812-497a-8d05-ad99c8571c20",
+      "ipCheckFinished": true,
+      "ipStatus": "uploaded",
+      "isFaceDetected": null,
+      "type": "media_input",
+      "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/2bf3d695-9812-497a-8d05-ad99c8571c20_resize.jpg"
+     },
+     "role": "image"
+    },
+    {
+     "data": {
+      "id": "479d514e-dcdc-45c5-8cab-368511c116fd",
+      "ipCheckFinished": true,
+      "ipStatus": "uploaded",
+      "isFaceDetected": null,
+      "type": "media_input",
+      "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/479d514e-dcdc-45c5-8cab-368511c116fd_resize.jpg"
+     },
+     "role": "image"
+    },
+    {
+     "data": {
+      "id": "a59c0f06-eb57-4eb2-b5b1-06168ab929e5",
+      "ipCheckFinished": true,
+      "ipStatus": "uploaded",
+      "isFaceDetected": null,
+      "type": "media_input",
+      "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/a59c0f06-eb57-4eb2-b5b1-06168ab929e5_resize.jpg"
+     },
+     "role": "image"
+    },
+    {
+     "data": {
+      "id": "a8179a5e-a592-411b-959f-422a77d8eee2",
+      "ipCheckFinished": true,
+      "ipStatus": "uploaded",
+      "isFaceDetected": null,
+      "type": "media_input",
+      "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/a8179a5e-a592-411b-959f-422a77d8eee2_resize.jpg"
+     },
+     "role": "image"
+    },
+    {
+     "data": {
+      "id": "b56f8646-fe31-45fa-9474-c38369acd913",
+      "ipCheckFinished": true,
+      "ipStatus": "uploaded",
+      "isFaceDetected": null,
+      "type": "media_input",
+      "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/b56f8646-fe31-45fa-9474-c38369acd913_resize.jpg"
+     },
+     "role": "image"
+    },
+    {
+     "data": {
+      "id": "fe877a70-6a50-4db1-bb05-927eb566e628",
+      "ipCheckFinished": true,
+      "ipStatus": "uploaded",
+      "isFaceDetected": null,
+      "type": "media_input",
+      "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/fe877a70-6a50-4db1-bb05-927eb566e628.png"
+     },
+     "role": "image"
+    },
+    {
+     "data": {
+      "id": "8af372ee-77d9-4966-8e4e-1bd408c9101c",
+      "ipCheckFinished": true,
+      "ipStatus": "uploaded",
+      "isFaceDetected": null,
+      "type": "media_input",
+      "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/8af372ee-77d9-4966-8e4e-1bd408c9101c.png"
+     },
+     "role": "image"
+    }
+   ],
+   "model": "default",
+   "prompt": "SEEDANCE 2.5 — ARJUN’S INTRODUCTION\n\n26 seconds. Four shots. Photorealistic live-action cinematography, 2.39:1 framing. Evidently handheld throughout. The café …",
+   "prompt_language": "en",
+   "resolution": "480p",
+   "width": 480
+  }
+ },
+ "response_headers": {
+  "content-type": "application/json",
+  "x-set-cookie": "datadome=fKMhKDICpu0vxQFPIhf4kkvV36wNMFylshbD~~103Q2SZ_OVbYqjVRWybkUS2JX09iZlZdFXB28vL2zTag1lvvRWAtleTstCcDjvRsFt_gbNHz22jH2aQMzCXQCLtOnK; Max-Age=31536000; Domain=.higgsfield.ai; Path=/; Secure; SameSite=Lax"
+ },
+ "response_body": {
+  "folder_credits": null,
+  "free_gens_v2": {
+   "items": []
+  },
+  "generation_seconds": {
+   "items": []
+  },
+  "has_more": false,
+  "id": "24df8a59-35af-44c8-90b5-53c112f69c2e",
+  "job_sets": [
+   {
+    "chain_id": null,
+    "client_meta": null,
+    "cluster_hash": "4a6fb1258b86cfaffc0413a0d3c88fb0",
+    "cost": 1200,
+    "created_at": 1790149152.297738,
+    "id": "a99d0038-91cc-4d1a-9edf-7294e8a5fad0",
+    "jobs": [
+     {
+      "board_ids": [],
+      "can_bypass_ip": false,
+      "cluster_hash": "4a6fb1258b86cfaffc0413a0d3c88fb0",
+      "created_at": 1790149152.305867,
+      "folder_ids": [],
+      "id": "0ca6024d-4528-43c9-bb34-2244cec10115",
+      "ip_check_finished": false,
+      "ip_detected": null,
+      "is_favourite": false,
+      "meta": {},
+      "published_at": null,
+      "representation": null,
+      "result": null,
+      "results": null,
+      "status": "queued",
+      "trace_id": "0ca6024d-4528-43c9-bb34-2244cec10115",
+      "user_id": "user_36mMlkuUFLoVEvOM0icTtFFDdlE"
+     }
+    ],
+    "params": {
+     "aspect_ratio": "1:1",
+     "bitrate_mode": "high",
+     "camera_aperture": null,
+     "camera_lens": null,
+     "camera_model": null,
+     "color_palette": null,
+     "draft": false,
+     "draft_job_id": null,
+     "duration": 4,
+     "era_control": null,
+     "extension_mode": null,
+     "generate_audio": true,
+     "genre": null,
+     "genre_control": null,
+     "height": 480,
+     "light": null,
+     "light_custom": null,
+     "light_preset": null,
+     "medias": [
+      {
+       "data": {
+        "id": "3e7ceabb-07a5-4899-94e0-b5813e9db3f8",
+        "type": "media_input",
+        "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/3e7ceabb-07a5-4899-94e0-b5813e9db3f8_resize.jpg"
+       },
+       "role": "image"
+      },
+      {
+       "data": {
+        "id": "8e1cffa3-c7f3-453f-95be-4ddbde38fa5f",
+        "type": "media_input",
+        "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/8e1cffa3-c7f3-453f-95be-4ddbde38fa5f_resize.jpg"
+       },
+       "role": "image"
+      },
+      {
+       "data": {
+        "id": "55d0b5cc-9e78-4152-b778-1a0d4c5684fd",
+        "type": "media_input",
+        "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/55d0b5cc-9e78-4152-b778-1a0d4c5684fd_resize.jpg"
+       },
+       "role": "image"
+      },
+      {
+       "data": {
+        "id": "2bf3d695-9812-497a-8d05-ad99c8571c20",
+        "type": "media_input",
+        "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/2bf3d695-9812-497a-8d05-ad99c8571c20_resize.jpg"
+       },
+       "role": "image"
+      },
+      {
+       "data": {
+        "id": "479d514e-dcdc-45c5-8cab-368511c116fd",
+        "type": "media_input",
+        "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/479d514e-dcdc-45c5-8cab-368511c116fd_resize.jpg"
+       },
+       "role": "image"
+      },
+      {
+       "data": {
+        "id": "a59c0f06-eb57-4eb2-b5b1-06168ab929e5",
+        "type": "media_input",
+        "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/a59c0f06-eb57-4eb2-b5b1-06168ab929e5_resize.jpg"
+       },
+       "role": "image"
+      },
+      {
+       "data": {
+        "id": "a8179a5e-a592-411b-959f-422a77d8eee2",
+        "type": "media_input",
+        "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/a8179a5e-a592-411b-959f-422a77d8eee2_resize.jpg"
+       },
+       "role": "image"
+      },
+      {
+       "data": {
+        "id": "b56f8646-fe31-45fa-9474-c38369acd913",
+        "type": "media_input",
+        "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/b56f8646-fe31-45fa-9474-c38369acd913_resize.jpg"
+       },
+       "role": "image"
+      },
+      {
+       "data": {
+        "id": "fe877a70-6a50-4db1-bb05-927eb566e628",
+        "type": "media_input",
+        "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/fe877a70-6a50-4db1-bb05-927eb566e628.png"
+       },
+       "role": "image"
+      },
+      {
+       "data": {
+        "id": "8af372ee-77d9-4966-8e4e-1bd408c9101c",
+        "type": "media_input",
+        "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/8af372ee-77d9-4966-8e4e-1bd408c9101c.png"
+       },
+       "role": "image"
+      }
+     ],
+     "model": "default",
+     "multi_prompt": [],
+     "multi_shot_mode": "custom",
+     "multi_shots": false,
+     "pacing": null,
+     "prompt": "SEEDANCE 2.5 — ARJUN’S INTRODUCTION\n\n26 seconds. Four shots. Photorealistic live-action cinematography, 2.39:1 framing. Evidently handheld throughout. The café …",
+     "prompt_language": "en",
+     "reference_elements": [],
+     "resolution": "480p",
+     "speedramp": "auto",
+     "width": 480
+    },
+    "parent_id": null,
+    "project_id": "24df8a59-35af-44c8-90b5-53c112f69c2e",
+    "type": "cinematic_studio_video_4_0"
+   }
+  ],
+  "wallet": {
+   "credits_balance": 0,
+   "expire_days": 90,
+   "next_credit_allocation_date": null,
+   "on_demand_credits": 71888,
+   "subscription_balance": 0,
+   "total_credits": 600000,
+   "wallet_created_at": "2025-12-13T06:30:47.592351Z",
+   "workspace_id": "24df8a59-35af-44c8-90b5-53c112f69c2e"
+  },
+  "workspace_details": {
+   "avatar_url": null,
+   "bio": null,
+   "can_publish_assets": true,
+   "clerk_organization_id": null,
+   "grace_period_type": null,
+   "id": "24df8a59-35af-44c8-90b5-53c112f69c2e",
+   "is_enterprise_sub_workspace": false,
+   "name": null,
+   "sso_status": "idle",
+   "sub_workspace_block": null,
+   "type": "private",
+   "user_role": "owner"
+  }
+ },
+ "extra": {
+  "duration_ms": 1407,
+  "json": true,
+  "truncated": false
+ }
+}

@@ -1,0 +1,18 @@
+# Python
+server/.venv/
+__pycache__/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Node
+extension/node_modules/
+extension/dist/
+
+# Local data: asset copies and raw discovery dumps (redacted, but still private traffic).
+# Curated fixtures are committed under extension/src/adapters/fixtures/.
+data/
+
+.env
+.DS_Store

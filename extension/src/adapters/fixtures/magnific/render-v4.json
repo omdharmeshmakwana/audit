@@ -1,0 +1,233 @@
+{
+ "service": "magnific",
+ "transport": "fetch",
+ "captured_at": "2026-09-23T08:23:40.748Z",
+ "page_url": "https://www.magnific.com/app/ai-image-generator",
+ "method": "POST",
+ "url": "https://ak-data.magnific.com/app/api/render/v4?lang=en_US&user_id=225502283",
+ "status": 200,
+ "request_headers": {
+  "accept": "application/json",
+  "content-type": "application/json",
+  "x-correlation-id": "1367d007-b936-4900-a2fa-e16b6c06e70e",
+  "x-folder-reference": "cf223cc5-b976-4479-8f8a-e279121e5648",
+  "x-project-reference": "cf223cc5-b976-4479-8f8a-e279121e5648",
+  "x-xsrf-token": "[REDACTED]"
+ },
+ "request_body": {
+  "aspect_ratio": "16:9",
+  "family": "a2d03852-7aaf-4df9-9951-0768b0dfb547",
+  "force_credits": true,
+  "height": 1440,
+  "image_index": 0,
+  "image_references": [
+   {
+    "category": "image",
+    "image": "creation:Syni0eBUb8",
+    "label": "img1",
+    "type": "reference"
+   }
+  ],
+  "metadata": {
+   "aspectRatio": "16:9",
+   "inputPrompt": "in @img1 i want a bit less crow so that people could be diffrentiated  realistic texture and human body",
+   "mode": "seedream-5-pro",
+   "smartPrompt": false,
+   "unlimited": false
+  },
+  "mode": "seedream-5-pro",
+  "negative_prompt": null,
+  "num_images": 1,
+  "prompt": "in @img1 i want a bit less crow so that people could be diffrentiated  realistic texture and human body",
+  "request_token": "[REDACTED]",
+  "resolution": "2k",
+  "seed": 249676,
+  "smart_prompt": false,
+  "thinking_level": "minimal",
+  "tool": "text-to-image",
+  "width": 2560
+ },
+ "response_headers": {
+  "cache-control": "no-cache, private",
+  "content-type": "application/json",
+  "x-request-id": "glb-d7d9d282a22e36c6956864713140f52b"
+ },
+ "response_body": {
+  "creation": {
+   "conversions": {
+    "png": null,
+    "svg": null
+   },
+   "created_at": "2026-09-23T08:23:39.000000Z",
+   "date_for_humans": "1 second ago",
+   "expectTime": 60,
+   "family": "a2d03852-7aaf-4df9-9951-0768b0dfb547",
+   "folder": null,
+   "folder_reference": "cf223cc5-b976-4479-8f8a-e279121e5648",
+   "id": 3630007929,
+   "identifier": "iGX0Hoj3uK",
+   "is_last": 1,
+   "is_watermarked": false,
+   "job": null,
+   "large_preview": null,
+   "metadata": {
+    "aspectRatio": "16:9",
+    "client_type": "pro_forcing_credits",
+    "content_slot": null,
+    "creditLedger": [
+     {
+      "credits": 100,
+      "creditsEstimated": 100,
+      "occurredAt": "2026-09-23T08:23:39+00:00",
+      "transactionId": "d00552e5-1109-4589-8132-32b9eb8a61bb",
+      "type": "consume"
+     }
+    ],
+    "creditLedgerTotals": {
+     "credits": 100,
+     "creditsEstimated": 100,
+     "unlimitedCredits": 0
+    },
+    "enhancer": null,
+    "expectTime": 60,
+    "height": 1440,
+    "imageReferences": [
+     {
+      "category": "image",
+      "image": "creation:Syni0eBUb8",
+      "label": "img1",
+      "type": "image"
+     }
+    ],
+    "index": 0,
+    "inputPrompt": "in @img1 i want a bit less crow so that people could be diffrentiated  realistic texture and human body",
+    "mode": "seedream-5-pro",
+    "modelName": "Seedream 5 Pro",
+    "modifiers": [],
+    "platform": "web",
+    "projects_folder_reference": "cf223cc5-b976-4479-8f8a-e279121e5648",
+    "projects_project_reference": "cf223cc5-b976-4479-8f8a-e279121e5648",
+    "prompt": "in @img1 i want a bit less crow so that people could be diffrentiated  realistic texture and human body",
+    "queue_priority": 1,
+    "request_id": "glb-d7d9d282a22e36c6956864713140f52b",
+    "resolution": "2k",
+    "retryInfo": {
+     "creditKey": "pikaso-image-ai_image_generator-seedream_5_pro_3k",
+     "nsfw": false,
+     "originalSettings": {
+      "aspect_ratio": "16:9",
+      "board_uuid": null,
+      "color_palette": null,
+      "color_palette_id": null,
+      "creation_id": null,
+      "creativity": null,
+      "family": "a2d03852-7aaf-4df9-9951-0768b0dfb547",
+      "force_credits": true,
+      "height": 1440,
+      "image_index": 0,
+      "image_references": [
+       {
+        "category": "image",
+        "image": "creation:Syni0eBUb8",
+        "label": "img1",
+        "type": "image"
+       }
+      ],
+      "image_request_id": null,
+      "metadata": {
+       "aspectRatio": "16:9",
+       "height": 1440,
+       "imageReferences": [
+        {
+         "category": "image",
+         "image": "creation:Syni0eBUb8",
+         "label": "img1",
+         "type": "image"
+        }
+       ],
+       "index": 0,
+       "inputPrompt": "in @img1 i want a bit less crow so that people could be diffrentiated  realistic texture and human body",
+       "mode": "seedream-5-pro",
+       "modifiers": [],
+       "prompt": "in @img1 i want a bit less crow so that people could be diffrentiated  realistic texture and human body",
+       "seed": "249676",
+       "smartPrompt": false,
+       "tags": [
+        "16:9",
+        "seedream-5-pro",
+        "thinking-minimal"
+       ],
+       "thinkingLevel": "minimal",
+       "unlimited": false,
+       "width": 2560
+      },
+      "mode": "seedream-5-pro",
+      "negative_prompt": null,
+      "no_persist": null,
+      "num_images": 1,
+      "priority": 1,
+      "prompt": "in @img1 i want a bit less crow so that people could be diffrentiated  realistic texture and human body",
+      "quality": null,
+      "request_token": "[REDACTED]",
+      "resolution": "2k",
+      "retry_credit_key": null,
+      "safety_filter_type": null,
+      "seed": 249676,
+      "should_save": null,
+      "smart_prompt": false,
+      "status": "processing",
+      "strength": null,
+      "task_delay_seconds": null,
+      "thinking_level": "minimal",
+      "tier": null,
+      "tool": "text-to-image",
+      "user_id": 173618012,
+      "uuid": null,
+      "v4": true,
+      "variant": null,
+      "visible": null,
+      "width": 2560
+     },
+     "timestamp": "2026-09-23T08:23:39+00:00",
+     "userId": 173618012
+    },
+    "seed": "249676",
+    "slug": "seedream-5-pro",
+    "smartPrompt": false,
+    "source_metadata": {
+     "mode": "seedream-5-pro",
+     "prompt": "in @img1 i want a bit less crow so that people could be diffrentiated  realistic texture and human body",
+     "seed": 249676
+    },
+    "tags": [
+     "16:9",
+     "seedream-5-pro",
+     "thinking-minimal"
+    ],
+    "thinkingLevel": "minimal",
+    "transactionId": "d00552e5-1109-4589-8132-32b9eb8a61bb",
+    "unlimited": false,
+    "width": 2560
+   },
+   "nsfw": false,
+   "persisted": true,
+   "preview": null,
+   "properties": null,
+   "public": 0,
+   "raw": null,
+   "status": "processing",
+   "stored": false,
+   "tool": "text-to-image",
+   "url": null,
+   "user_id": 173618012,
+   "user_tags": [],
+   "visible": 1,
+   "webUrl": "https://www.magnific.com/app/creation/iGX0Hoj3uK"
+  }
+ },
+ "extra": {
+  "duration_ms": 2269,
+  "json": true,
+  "truncated": false
+ }
+}

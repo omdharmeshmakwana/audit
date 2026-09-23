@@ -1,0 +1,119 @@
+{
+ "service": "higgsfield",
+ "transport": "fetch",
+ "captured_at": "2026-09-23T07:40:20.796Z",
+ "page_url": "https://higgsfield.ai/ai/image?model=nano-banana-2",
+ "method": "POST",
+ "url": "https://fnf-api-gw.higgsfield.ai/fnf/jobs/v2/nano_banana_flash",
+ "status": 200,
+ "request_headers": {
+  "accept-language": "en",
+  "authorization": "[REDACTED]",
+  "baggage": "sentry-environment=production,sentry-release=5da87d73684c93dc627ab2e298a49edf6fe8c77e,sentry-public_key=381a4c00affffdbcd21f746baa2cc263,sentry-trace_id=a4386350fbef421596deccc46ef9c671,sentry-org_id=4509169762697216,sentry-transaction=%2F_private%2Fai%2Fimage,sentry-sampled=false,sentry-sample_rand=0.2776249602645854,sentry-sample_rate=0.004711",
+  "content-type": "application/json",
+  "sentry-trace": "a4386350fbef421596deccc46ef9c671-a3e1c4d06fcbe6f3-0",
+  "traceparent": "00-a4386350fbef421596deccc46ef9c671-9624f53ac34bb027-00",
+  "x-datadome-clientid": "n4mV0VOjPPFF_2HzX103XEKtoZYkMTAfSmRnzbBCDamjSnrAlHHSXXHyjN3qVfatXlrYX7DK4Gzs78f_NKAMDMhHIGHt2qSJAEDeNOfyssBrv_iSngmz54gFe7PWFcRP"
+ },
+ "request_body": {
+  "params": {
+   "aspect_ratio": "16:9",
+   "batch_size": 1,
+   "height": 768,
+   "prompt": "Master wide shot, 16:9, photorealistic cinematic film still, location plate with no people in it. A modest, well-kept, everyday kahwa teahouse in a Kashmiri val…",
+   "resolution": "1k",
+   "use_unlim": false,
+   "width": 1376
+  },
+  "use_unlim": false
+ },
+ "response_headers": {
+  "content-type": "application/json",
+  "x-set-cookie": "datadome=Ez~ifdtG~jwDzQG5Mx_kIQhn9Sg4Swn_pofozbA2mJtbKXIQMg~T59v0XZ_7VKYBJo2YRUqmY5wNsIqSZsOmm~8S1FoU81y_hmKB0GFjTkiJbxHn8lJeGgLCKxntL4FE; Max-Age=31536000; Domain=.higgsfield.ai; Path=/; Secure; SameSite=Lax"
+ },
+ "response_body": {
+  "folder_credits": null,
+  "free_gens_v2": {
+   "items": []
+  },
+  "generation_seconds": {
+   "items": []
+  },
+  "has_more": false,
+  "id": "24df8a59-35af-44c8-90b5-53c112f69c2e",
+  "job_sets": [
+   {
+    "chain_id": null,
+    "client_meta": null,
+    "cluster_hash": "5e1bc25cdd1e3fd568f59183201955bf",
+    "cost": 150,
+    "created_at": 1790149219.917534,
+    "id": "76703685-8502-4e2f-a7df-51a92c78cedc",
+    "jobs": [
+     {
+      "board_ids": [],
+      "can_bypass_ip": false,
+      "cluster_hash": "5e1bc25cdd1e3fd568f59183201955bf",
+      "created_at": 1790149220.066512,
+      "folder_ids": [],
+      "id": "5fb1b25a-318a-4242-b4cb-6dc5061ca17b",
+      "ip_check_finished": null,
+      "ip_detected": null,
+      "is_favourite": false,
+      "meta": {},
+      "published_at": null,
+      "representation": null,
+      "result": null,
+      "results": null,
+      "status": "queued",
+      "trace_id": "5fb1b25a-318a-4242-b4cb-6dc5061ca17b",
+      "user_id": "user_36mMlkuUFLoVEvOM0icTtFFDdlE"
+     }
+    ],
+    "params": {
+     "aspect_ratio": "16:9",
+     "batch_size": 1,
+     "height": 768,
+     "is_inpaint": false,
+     "medias": [],
+     "prompt": "Master wide shot, 16:9, photorealistic cinematic film still, location plate with no people in it. A modest, well-kept, everyday kahwa teahouse in a Kashmiri val…",
+     "reference_elements": [],
+     "resolution": "1k",
+     "width": 1344
+    },
+    "parent_id": null,
+    "project_id": "24df8a59-35af-44c8-90b5-53c112f69c2e",
+    "type": "nano_banana_flash"
+   }
+  ],
+  "wallet": {
+   "credits_balance": 0,
+   "expire_days": 90,
+   "next_credit_allocation_date": null,
+   "on_demand_credits": 72938,
+   "subscription_balance": 0,
+   "total_credits": 600000,
+   "wallet_created_at": "2025-12-13T06:30:47.592351Z",
+   "workspace_id": "24df8a59-35af-44c8-90b5-53c112f69c2e"
+  },
+  "workspace_details": {
+   "avatar_url": null,
+   "bio": null,
+   "can_publish_assets": true,
+   "clerk_organization_id": null,
+   "grace_period_type": null,
+   "id": "24df8a59-35af-44c8-90b5-53c112f69c2e",
+   "is_enterprise_sub_workspace": false,
+   "name": null,
+   "sso_status": "idle",
+   "sub_workspace_block": null,
+   "type": "private",
+   "user_role": "owner"
+  }
+ },
+ "extra": {
+  "duration_ms": 2036,
+  "json": true,
+  "truncated": false
+ }
+}

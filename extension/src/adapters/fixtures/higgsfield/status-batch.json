@@ -1,0 +1,46 @@
+{
+ "service": "higgsfield",
+ "transport": "fetch",
+ "captured_at": "2026-09-23T07:26:56.504Z",
+ "page_url": "https://higgsfield.ai/generate/video",
+ "method": "POST",
+ "url": "https://fnf-api-gw.higgsfield.ai/fnf/jobs/status-batch",
+ "status": 200,
+ "request_headers": {
+  "accept-language": "en",
+  "authorization": "[REDACTED]",
+  "baggage": "sentry-environment=production,sentry-release=5da87d73684c93dc627ab2e298a49edf6fe8c77e,sentry-public_key=381a4c00affffdbcd21f746baa2cc263,sentry-trace_id=597b30f4163a4c5e8d2327b6de58bc08,sentry-org_id=4509169762697216,sentry-transaction=%2F_private%2Fgenerate%2F%24mode%2F,sentry-sampled=false,sentry-sample_rand=0.38823044367268467,sentry-sample_rate=0.0001",
+  "content-type": "application/json",
+  "hf-surface": "cinema_studio",
+  "sentry-trace": "597b30f4163a4c5e8d2327b6de58bc08-add0db7d1ca87d97-0",
+  "traceparent": "00-597b30f4163a4c5e8d2327b6de58bc08-8842515dedfedbe8-00",
+  "x-datadome-clientid": "BvnisE4XIq0w~sfN7PPBjfPpq_BPHvHezdBgGLd6GmAjaCqiFiOVDJu_KmUTvEORF8qqZOV19jR2OA15x3WyDyfHIfGSjY_EzVAhSNc~v9sstclLvonXFFgRHi_XDfYA"
+ },
+ "request_body": {
+  "ids": [
+   "253edf08-5200-4819-9677-5f98df466685"
+  ]
+ },
+ "response_headers": {
+  "content-type": "application/json",
+  "x-set-cookie": "datadome=x4cWTg9GtNRIep1hZlTt_27ztVoVWSgO7X8Yp2p_mjEsEKld5PNEJLaiR4_Rw_nCubnye88yeEN_7J0FF0OEd95Qkdy9DIljsQDpDekqlt8N8uw5jo1Fb2zyLa9xA55s; Max-Age=31536000; Domain=.higgsfield.ai; Path=/; Secure; SameSite=Lax"
+ },
+ "response_body": {
+  "items": [
+   {
+    "can_bypass_ip": false,
+    "id": "253edf08-5200-4819-9677-5f98df466685",
+    "ip_check_finished": false,
+    "ip_detected": null,
+    "job_set_type": "cinematic_studio_video_4_0",
+    "status": "in_progress"
+   }
+  ],
+  "missing": []
+ },
+ "extra": {
+  "duration_ms": 330,
+  "json": true,
+  "truncated": false
+ }
+}

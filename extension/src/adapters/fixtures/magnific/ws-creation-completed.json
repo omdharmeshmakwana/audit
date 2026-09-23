@@ -1,0 +1,20 @@
+{
+ "service": "magnific",
+ "transport": "ws",
+ "captured_at": "2026-09-23T08:24:34.539Z",
+ "page_url": "https://www.magnific.com/app/ai-image-generator",
+ "method": null,
+ "url": "wss://ak-data.magnific.com/app/app/xzo0bvj9t7raco6og0q3?protocol=7&client=js&version=8.4.0&flash=false",
+ "status": null,
+ "request_headers": {},
+ "request_body": null,
+ "response_headers": {},
+ "response_body": {
+  "channel": "private-project.cf223cc5-b976-4479-8f8a-e279121e5648",
+  "data": "{\"id\":3630007929,\"status\":\"completed\",\"creation\":{\"id\":3630007929,\"identifier\":\"iGX0Hoj3uK\",\"family\":\"a2d03852-7aaf-4df9-9951-0768b0dfb547\",\"tool\":\"text-to-image\",\"metadata\":{\"mode\":\"seedream-5-pro\",\"seed\":\"249676\",\"slug\":\"seedream-5-pro\",\"tags\":[\"16:9\",\"seedream-5-pro\",\"thinking-minimal\"],\"index\":0,\"width\":2560,\"height\":1440,\"prompt\":\"in @img1 i want a bit less crow so that people could be diffrentiated  realistic texture and human body\",\"service\":\"seedream-5-0-pro-edit\",\"task_id\":\"nats-fb3719a3-0d7a-4ae4-a39f-ed48a6e48f5f\",\"enhancer\":null,\"iqsTaskId\":\"nats-fb3719a3-0d7a-4ae4-a39f-ed48a6e48f5f\",\"modelName\":\"Seedream 5 Pro\",\"modifiers\":[],\"unlimited\":false,\"expectTime\":60,\"request_id\":\"glb-d7d9d282a22e36c6956864713140f52b\",\"resolution\":\"2k\",\"aspectRatio\":\"16:9\",\"client_type\":\"pro_forcing_credits\",\"elapsedTime\":55169,\"inputPrompt\":\"in @img1 i want a bit less crow so that people could be diffrentiated  realistic texture and human body\",\"outputWidth\":2560,\"smartPrompt\":false,\"content_slot\":null,\"creditLedger\":[{\"type\":\"consume\",\"credits\":100,\"occurredAt\":\"2026-09-23T08:23:39+00:00\",\"transactionId\":\"d00552e5-1109-4589-8132-32b9eb8a61bb\",\"creditsEstimated\":100}],\"outputHeight\":1440,\"thinkingLevel\":\"minimal\",\"transactionId\":\"d00552e5-1109-4589-8132-32b9eb8a61bb\",\"queue_priority\":1,\"imageReferences\":[{\"type\":\"image\",\"image\":\"creation:Syni0eBUb8\",\"label\":\"img1\",\"category\":\"image\"}],\"source_metadata\":{\"mode\":\"seedream-5-pro\",\"seed\":249676,\"prompt\":\"in @img1 i want a bit less crow so that people could be diffrentiated  realistic texture and human body\"},\"credits_consumed\":[],\"creditLedgerTotals\":{\"credits\":100,\"creditsEstimated\":100,\"unlimitedCredits\":0},\"projects_folder_reference\":\"cf223cc5-b976-4479-8f8a-e279121e5648\",\"projects_project_reference\":\"cf223cc5-b976-4479-8f8a-e279121e5648\"},\"url\":\"https:\\/\\/pikaso.cdnpk.net\\/private\\/production\\/5528616187\\/render.png?token=[REDACTED]\",\"raw\":null,\"stored\":false,\"folder\":null,\"properties\":null,\"preview\":\"https:\\/\\/pikaso.cdnpk.net\\/private\\/production\\/5528616187\\/render.png?token=[REDACTED]&preview=1\",\"large_preview\":\"https:\\/\\/pikaso.cdnpk.net\\/private\\/production\\/5528616187\\/render.png?token=[REDACTED]&preview=1\",\"public\":0,\"is_last\":1,\"nsfw\":false,\"created_at\":\"2026-09-23T08:23:39.000000Z\",\"date_for_humans\":\"55 seconds ago\",\"persisted\":true,\"is_watermarked\":false,\"status\":\"completed\",\"user_id\":173618012,\"job\":null,\"conversions\":{\"svg\":null,\"png\":null},\"expectTime\":60,\"visible\":1,\"webUrl\":\"https:\\/\\/www.magnific.com\\/app\\/creation\\/iGX0Hoj3uK\",\"folder_reference\":\"cf223cc5-b976-4479-8f8a-e279121e5648\",\"user_tags\":[]},\"container_references\":[]}",
+  "event": "creation.updated"
+ },
+ "extra": {
+  "direction": "in"
+ }
+}

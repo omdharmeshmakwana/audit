@@ -1,0 +1,20 @@
+{
+ "service": "magnific",
+ "transport": "ws",
+ "captured_at": "2026-09-23T08:23:40.041Z",
+ "page_url": "https://www.magnific.com/app/ai-image-generator",
+ "method": null,
+ "url": "wss://ak-data.magnific.com/app/app/xzo0bvj9t7raco6og0q3?protocol=7&client=js&version=8.4.0&flash=false",
+ "status": null,
+ "request_headers": {},
+ "request_body": null,
+ "response_headers": {},
+ "response_body": {
+  "channel": "private-project.cf223cc5-b976-4479-8f8a-e279121e5648",
+  "data": "{\"id\":3630007929,\"status\":\"processing\",\"creation\":{\"id\":3630007929,\"identifier\":\"iGX0Hoj3uK\",\"family\":\"a2d03852-7aaf-4df9-9951-0768b0dfb547\",\"tool\":\"text-to-image\",\"metadata\":{\"inputPrompt\":\"in @img1 i want a bit less crow so that people could be diffrentiated  realistic texture and human body\",\"aspectRatio\":\"16:9\",\"mode\":\"seedream-5-pro\",\"unlimited\":false,\"smartPrompt\":false,\"prompt\":\"in @img1 i want a bit less crow so that people could be diffrentiated  realistic texture and human body\",\"seed\":\"249676\",\"index\":0,\"width\":2560,\"height\":1440,\"tags\":[\"16:9\",\"seedream-5-pro\",\"thinking-minimal\"],\"thinkingLevel\":\"minimal\",\"imageReferences\":[{\"image\":\"creation:Syni0eBUb8\",\"type\":\"image\",\"category\":\"image\",\"label\":\"img1\"}],\"modifiers\":[],\"transactionId\":\"d00552e5-1109-4589-8132-32b9eb8a61bb\",\"reservation_id\":\"reservation:173618012:db6b326f-6002-4484-aa02-79b51852066b\",\"expectTime\":60,\"slug\":\"seedream-5-pro\",\"modelName\":\"Seedream 5 Pro\",\"creditLedger\":[{\"type\":\"consume\",\"occurredAt\":\"2026-09-23T08:23:39+00:00\",\"transactionId\":\"d00552e5-1109-4589-8132-32b9eb8a61bb\",\"credits\":100,\"creditsEstimated\":100}],\"creditLedgerTotals\":{\"credits\":100,\"creditsEstimated\":100,\"unlimitedCredits\":0},\"resolution\":\"2k\",\"queue_priority\":1,\"source_metadata\":{\"prompt\":\"in @img1 i want a bit less crow so that people could be diffrentiated  realistic texture and human body\",\"mode\":\"seedream-5-pro\",\"seed\":249676},\"request_id\":\"glb-d7d9d282a22e36c6956864713140f52b\",\"platform\":\"web\",\"client_type\":\"pro_forcing_credits\"},\"url\":null,\"raw\":null,\"stored\":false,\"folder\":null,\"properties\":null,\"preview\":null,\"large_preview\":null,\"public\":0,\"is_last\":true,\"nsfw\":false,\"created_at\":\"2026-09-23T08:23:39.000000Z\",\"date_for_humans\":\"0 seconds ago\",\"persisted\":true,\"is_watermarked\":false,\"status\":\"processing\",\"user_id\":173618012,\"job\":null,\"conversions\":{\"svg\":null,\"png\":null},\"expectTime\":60,\"visible\":null,\"webUrl\":\"https:\\/\\/www.magnific.com\\/app\\/creation\\/iGX0Hoj3uK\",\"folder_reference\":\"cf223cc5-b976-4479-8f8a-e279121e5648\",\"user_tags\":[]},\"container_references\":[]}",
+  "event": "creation.created"
+ },
+ "extra": {
+  "direction": "in"
+ }
+}

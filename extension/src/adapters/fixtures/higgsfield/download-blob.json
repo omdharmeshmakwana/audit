@@ -1,0 +1,27 @@
+{
+ "service": "higgsfield",
+ "transport": "download",
+ "captured_at": "2026-09-23T07:39:38.279Z",
+ "page_url": null,
+ "method": "GET",
+ "url": "blob:https://higgsfield.ai/1a679ad7-c042-4fe1-85cb-ee04292de863",
+ "status": null,
+ "request_headers": {},
+ "request_body": null,
+ "response_headers": {},
+ "response_body": null,
+ "extra": {
+  "ended_at": "2026-09-23T07:39:38.253Z",
+  "file_size": 2698248,
+  "filename": "hf_20260923_072256_253edf08-5200-4819-9677-5f98df466685.mp4",
+  "mime": "video/mp4",
+  "original_url": "blob:https://higgsfield.ai/1a679ad7-c042-4fe1-85cb-ee04292de863",
+  "referrer": null,
+  "refetch": {
+   "attempted": false,
+   "reason": "blob URL is not re-fetchable from the worker"
+  },
+  "started_at": "2026-09-23T07:39:38.180Z",
+  "total_bytes": 2698248
+ }
+}

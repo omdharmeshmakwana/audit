@@ -1,0 +1,24 @@
+{
+ "service": "higgsfield",
+ "transport": "fetch-stream",
+ "captured_at": "2026-09-23T08:05:26.318Z",
+ "page_url": "https://higgsfield.ai/ai/video?model=seedance_2_5_extend",
+ "method": "GET",
+ "url": "https://fnf-api-gw.higgsfield.ai/fnf-notification/notifications/stream",
+ "status": 200,
+ "request_headers": {
+  "accept": "text/event-stream",
+  "accept-language": "en",
+  "authorization": "[REDACTED]",
+  "x-datadome-clientid": "McJ8vjLbIQc0HMjqXP2oXlqmAoX8W7fzzJhod0syS9I8KBcByj8M8mSJimWxRuPLDuuWU0dQA~QyE4WKvjDs00lB99jAFqo1SgDh7hDfyQF4et2j0U~rTz1SV5NVwfgR"
+ },
+ "request_body": null,
+ "response_headers": {
+  "cache-control": "no-cache",
+  "content-type": "text/event-stream"
+ },
+ "response_body": "event: folder:job_completed\ndata: {\"batch_index\":null,\"batch_size\":1,\"duration_sec\":7,\"folder_id\":\"d25e25f8-2303-4aec-8091-a196d9a0364b\",\"folder_job_id\":\"11907212-0ca2-4af9-90ed-188f4c26f123\",\"funding\":{\"on_demand\":8400},\"height\":1080,\"is_marketing_studio\":false,\"is_paid\":true,\"is_soul_id_character\":false,\"is_upscale\":false,\"job_cost\":8400,\"job_id\":\"5d6cda69-d39a-4872-80ab-c2b76788d82f\",\"job_type\":\"video\",\"model\":\"cinematic_studio_video_4_0\",\"price_credits\":8400,\"result_url\":\"https://d8j0ntlcm91z4.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/hf_20260923_080117_5d6cda69-d39a-4872-80ab-c2b76788d82f.mp4\",\"status\":\"completed\",\"surface\":\"cinema_studio\",\"usage_mode\":\"paid\",\"used_free_gen\":false,\"used_unlim\":false,\"width\":1920}\n\nevent: folder:job_completed\ndata: {\"batch_index\":null,\"batch_size\":1,\"duration_sec\":7,\"folder_id\":\"d25e25f8-2303-4aec-8091-a196d9a0364b\",\"folder_job_id\":\"11907212-0ca2-4af9-90ed-188f4c26f123\",\"funding\":{\"on_demand\":8400},\"height\":1080,\"is_marketing_studio\":false,\"is_paid\":true,\"is_soul_id_character\":false,\"is_upscale\":false,\"job_cost\":8400,\"job_id\":\"5d6cda69-d39a-4872-80ab-c2b76788d82f\",\"job_type\":\"video\",\"model\":\"cinematic_studio_video_4_0\",\"price_credits\":8400,\"result_url\":\"https://d8j0ntlcm91z4.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/hf_20260923_080117_5d6cda69-d39a-4872-80ab-c2b76788d82f.mp4\",\"status\":\"completed\",\"surface\":\"cinema_studio\",\"usage_mode\":\"paid\",\"used_free_gen\":false,\"used_unlim\":false,\"width\":1920}\n\n",
+ "extra": {
+  "chunk_index": 57
+ }
+}

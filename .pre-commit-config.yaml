@@ -1,0 +1,33 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff
+        entry: server/.venv/bin/ruff check server
+        language: system
+        pass_filenames: false
+        files: ^server/
+      - id: ruff-format
+        name: ruff format
+        entry: server/.venv/bin/ruff format --check server
+        language: system
+        pass_filenames: false
+        files: ^server/
+      - id: mypy
+        name: mypy --strict
+        entry: bash -c 'cd server && .venv/bin/mypy faible'
+        language: system
+        pass_filenames: false
+        files: ^server/
+      - id: tsc
+        name: tsc --noEmit
+        entry: bash -c 'cd extension && npx tsc --noEmit'
+        language: system
+        pass_filenames: false
+        files: ^extension/
+      - id: eslint
+        name: eslint
+        entry: bash -c 'cd extension && npx eslint .'
+        language: system
+        pass_filenames: false
+        files: ^extension/

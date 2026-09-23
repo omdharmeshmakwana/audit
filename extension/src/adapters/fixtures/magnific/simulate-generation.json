@@ -1,0 +1,75 @@
+{
+ "service": "magnific",
+ "transport": "fetch",
+ "captured_at": "2026-09-23T08:23:32.487Z",
+ "page_url": "https://www.magnific.com/app/ai-image-generator?recreate=5j9UYyZKxe",
+ "method": "POST",
+ "url": "https://www.magnific.com/app/api/v2/ai/simulate-generation?lang=en_US&user_id=225502283",
+ "status": 200,
+ "request_headers": {
+  "accept": "application/json",
+  "baggage": "sentry-environment=production,sentry-release=pikaso%4017333fe,sentry-public_key=63e25bc4027247c286e329926f10a698,sentry-trace_id=fe4576075f944235b4747dd5255b7219,sentry-sampled=false,sentry-sample_rand=0.5292241094966221,sentry-sample_rate=0.001",
+  "content-type": "application/json",
+  "sentry-trace": "fe4576075f944235b4747dd5255b7219-bc2dcaf6ff81e2be-0",
+  "x-folder-reference": "cf223cc5-b976-4479-8f8a-e279121e5648",
+  "x-project-reference": "cf223cc5-b976-4479-8f8a-e279121e5648",
+  "x-xsrf-token": "[REDACTED]"
+ },
+ "request_body": {
+  "forceCredits": true,
+  "items": [
+   {
+    "config": {
+     "imageReferences": [
+      "creation:Syni0eBUb8"
+     ],
+     "resolution": "2k"
+    },
+    "model": "seedream-5-pro",
+    "quantity": 1
+   }
+  ]
+ },
+ "response_headers": {
+  "access-control-allow-credentials": "true",
+  "access-control-allow-origin": "https://www.magnific.com",
+  "access-control-expose-headers": "X-Request-Id",
+  "alt-svc": "h3=\":443\"; ma=93600",
+  "cache-control": "no-cache, private",
+  "content-encoding": "gzip",
+  "content-length": "175",
+  "content-type": "application/json",
+  "date": "Wed, 23 Sep 2026 08:23:32 GMT",
+  "link": "<https://cdn.magnific.com>; rel=preconnect; crossorigin",
+  "quic-version": "0x00000001",
+  "strict-transport-security": "max-age=31536000 ; includeSubDomains ; preload",
+  "vary": "Origin, Accept-Encoding",
+  "x-request-id": "ak-26a134a4538d691bd5ce8617c8380f44",
+  "x-session-user-id": "[REDACTED]"
+ },
+ "response_body": {
+  "items": [
+   {
+    "costPerImage": 100,
+    "index": 0,
+    "isUnlimited": false,
+    "model": "seedream-5-pro",
+    "numberOfImages": 1,
+    "quantity": 1,
+    "subtotal": 100,
+    "unitCost": 100
+   }
+  ],
+  "total": {
+   "credits": 100,
+   "hasUnlimited": false,
+   "realCost": null,
+   "remaining": 2192
+  }
+ },
+ "extra": {
+  "duration_ms": 411,
+  "json": true,
+  "truncated": false
+ }
+}

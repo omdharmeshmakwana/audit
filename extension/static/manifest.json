@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "Faible (Phase 0 discovery)",
+  "version": "0.0.1",
+  "description": "Faible capture \u2014 Phase 0 capture-all discovery mode.",
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "downloads",
+    "alarms"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Faible"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.higgsfield.ai/*",
+        "https://*.magnific.com/*",
+        "https://*.magnific.ai/*",
+        "https://*.freepik.com/*"
+      ],
+      "js": [
+        "main-world.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://*.higgsfield.ai/*",
+        "https://*.magnific.com/*",
+        "https://*.magnific.ai/*",
+        "https://*.freepik.com/*"
+      ],
+      "js": [
+        "relay.js"
+      ],
+      "run_at": "document_start"
+    }
+  ]
+}

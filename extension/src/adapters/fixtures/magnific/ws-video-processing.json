@@ -1,0 +1,20 @@
+{
+ "service": "magnific",
+ "transport": "ws",
+ "captured_at": "2026-09-23T08:49:46.598Z",
+ "page_url": "https://www.magnific.com/app/ai-video-generator",
+ "method": null,
+ "url": "wss://ak-data.magnific.com/app/app/xzo0bvj9t7raco6og0q3?protocol=7&client=js&version=8.4.0&flash=false",
+ "status": null,
+ "request_headers": {},
+ "request_body": null,
+ "response_headers": {},
+ "response_body": {
+  "channel": "private-project.cf223cc5-b976-4479-8f8a-e279121e5648",
+  "data": "{\"id\":3630150653,\"status\":\"processing\",\"creation\":{\"id\":3630150653,\"identifier\":\"iGXTTxa3uK\",\"family\":\"1fa57f9a-63bf-487e-aa1b-a01f9e07e03b\",\"tool\":\"video-generator\",\"metadata\":{\"api\":\"kling\",\"mode\":\"omni3\",\"name\":\"an animation of the poster @img1 \",\"slug\":\"kling-omni3\",\"tags\":[\"Kling 3.0 Omni\",\"5 sec\",\"9:16\",\"resolution:1080p\"],\"model\":\"kling\",\"family\":\"1fa57f9a-63bf-487e-aa1b-a01f9e07e03b\",\"prompt\":\"an animation of the poster @img1 \",\"status\":\"queued\",\"userId\":173618012,\"voices\":[],\"p_alloc\":1,\"duration\":5,\"platform\":\"web\",\"position\":0,\"boardUuid\":null,\"unlimited\":false,\"fast_track\":false,\"multiplier\":5,\"promptType\":\"basic\",\"references\":[{\"url\":\"https:\\/\\/pikaso.cdnpk.net\\/private\\/production\\/5528887867\\/upload.png?token=[REDACTED]\",\"name\":\"img1\",\"type\":\"image\",\"creationId\":\"gOP30uFSXO\",\"media_id\":5528887867}],\"request_id\":\"ak-cd71bf3279db4fc55ee921422d5d39fa\",\"resolution\":\"1080p\",\"aspectRatio\":\"9:16\",\"client_type\":\"pro_forcing_credits\",\"featureName\":\"pikaso-video-ai_video_generator-kling_omni_3_pro_audio\",\"cameraMotion\":\"\",\"creditLedger\":[{\"type\":\"consume\",\"credits\":575,\"occurredAt\":\"2026-09-23T08:49:37+00:00\",\"transactionId\":\"acb18740-c092-472b-b7c1-ad259e734639\",\"creditsEstimated\":575}],\"generationId\":\"nats-2570bc84-5f37-46ab-92df-4fb08e11c9f2\",\"transactionId\":\"acb18740-c092-472b-b7c1-ad259e734639\",\"negativePrompt\":\"\",\"promptEnhanced\":false,\"extraParameters\":{\"style\":\"default\",\"shotSize\":\"default\",\"shotAngle\":\"default\"},\"rollbackCredits\":{\"mode\":\"\",\"tool\":\"video-generator\",\"userId\":\"173618012\",\"credits\":5,\"transactionId\":\"acb18740-c092-472b-b7c1-ad259e734639\"},\"withSoundEffects\":true,\"is_unlimited_mode\":false,\"creditLedgerTotals\":{\"credits\":575,\"creditsEstimated\":575,\"unlimitedCredits\":0},\"expectedQueuedTime\":12,\"expectedGenerationTime\":249,\"projects_folder_reference\":\"cf223cc5-b976-4479-8f8a-e279121e5648\",\"projects_project_reference\":\"cf223cc5-b976-4479-8f8a-e279121e5648\",\"expectedQueuedTimeParameterized\":13,\"expectedGenerationTimeParameterized\":355,\"url\":null,\"mediaCollection\":[]},\"url\":null,\"raw\":null,\"stored\":false,\"folder\":null,\"properties\":null,\"preview\":null,\"large_preview\":null,\"public\":0,\"is_last\":1,\"nsfw\":false,\"created_at\":\"2026-09-23T08:49:37.000000Z\",\"date_for_humans\":\"9 seconds ago\",\"persisted\":true,\"is_watermarked\":false,\"status\":\"processing\",\"user_id\":173618012,\"job\":null,\"conversions\":{\"svg\":null,\"png\":null},\"expectTime\":0,\"visible\":1,\"webUrl\":\"https:\\/\\/www.magnific.com\\/app\\/creation\\/iGXTTxa3uK\",\"folder_reference\":\"cf223cc5-b976-4479-8f8a-e279121e5648\",\"user_tags\":[]},\"container_references\":[]}",
+  "event": "creation.updated"
+ },
+ "extra": {
+  "direction": "in"
+ }
+}

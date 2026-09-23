@@ -1,0 +1,43 @@
+{
+ "service": "magnific",
+ "transport": "download",
+ "captured_at": "2026-09-23T08:24:01.183Z",
+ "page_url": null,
+ "method": "GET",
+ "url": "https://pikaso.cdnpk.net/private/production/5528588025/render.png?token=[REDACTED]&download=magnific_in-img1-i-want-a-bit-less_YMaBkskWeC.png",
+ "status": null,
+ "request_headers": {},
+ "request_body": null,
+ "response_headers": {},
+ "response_body": null,
+ "extra": {
+  "ended_at": "2026-09-23T08:23:57.266Z",
+  "file_size": 7168150,
+  "filename": "magnific_in-img1-i-want-a-bit-less_YMaBkskWeC.png",
+  "fingerprint": {
+   "agree": null,
+   "blob_sha256": null,
+   "confidence": 1,
+   "evidence": "observed",
+   "job_id": null,
+   "job_output_sha256": null,
+   "method": "refetch",
+   "refetch_sha256": "9ecfe912012a198f3028665b604913b25613213bc1caa689fa5be0c921744d69",
+   "sha256": "9ecfe912012a198f3028665b604913b25613213bc1caa689fa5be0c921744d69"
+  },
+  "mime": "image/png",
+  "original_url": "https://pikaso.cdnpk.net/private/production/5528588025/render.png?token=[REDACTED]&download=magnific_in-img1-i-want-a-bit-less_YMaBkskWeC.png",
+  "referrer": "https://www.magnific.com/",
+  "refetch": {
+   "attempted": true,
+   "bytes": 7168150,
+   "content_type": "image/png",
+   "matches_download_size": true,
+   "ok": true,
+   "sha256": "9ecfe912012a198f3028665b604913b25613213bc1caa689fa5be0c921744d69",
+   "status": 200
+  },
+  "started_at": "2026-09-23T08:23:53.170Z",
+  "total_bytes": 7168150
+ }
+}

@@ -1,0 +1,52 @@
+{
+ "service": "magnific",
+ "transport": "fetch",
+ "captured_at": "2026-09-23T08:47:23.526Z",
+ "page_url": "https://www.magnific.com/app/tools/upscaler?creation=4RDY3FH9Aa",
+ "method": "POST",
+ "url": "https://ak-data.magnific.com/app/api/render/v4/upscale?lang=en_US&user_id=225502283",
+ "status": 422,
+ "request_headers": {
+  "accept": "application/json",
+  "content-type": "application/json",
+  "x-folder-reference": "cf223cc5-b976-4479-8f8a-e279121e5648",
+  "x-project-reference": "cf223cc5-b976-4479-8f8a-e279121e5648",
+  "x-xsrf-token": "[REDACTED]"
+ },
+ "request_body": {
+  "board_uuid": null,
+  "creativity": -3,
+  "engine": "automatic",
+  "force_credits": true,
+  "fractality": 0,
+  "hdr": 0,
+  "imagination": "subtle",
+  "input_image": "creation:4RDY3FH9Aa",
+  "metadata": {
+   "previous": 3630120591
+  },
+  "mode": "enhance-magnific-creative",
+  "optimised": "StandardUltra",
+  "prompt": "Create an original photorealistic cinematic wide location shot of Marine Drive, Mumbai, during a massive creature-crisis emergency at night.\n\nUse the same camera angle and spatial feeling as the reference image: a wide elevated cinematic view from behind the crowd, looking forward across the barricade line, over the soldiers and emergency vehicles, toward the long curve of Marine Drive and the distant smoke-covered danger zone. The crowd must be facing forward toward the smoke side of Marine Drive.\n\nA large military containment perimeter has been established along Marine Drive. In the foreground, a dense civilian crowd is gathered behind the control line, pressing forward with unstable energy. Most civilians should be ordinary people holding smartphones, raising hands, shouting, filming, and reacting. Only a very small number of people should carry flowers or printed photographs of Makaraj. Do not let devotional props dominate the frame.\n\nBetween the crowd and the military zone, include multiple layers of crowd-control infrastructure: heavy metal barricades, reinforced barricade fencing, and visible control wire barriers such as concertina wire / coiled security wire placed to stop civilians from crossing. The crowd-control wire should be clearly visible and feel like part of the emergency containment setup.\n\nInside the perimeter, soldiers stand facing the crowd instead of facing the creature, trying to hold the line. Include fire brigade trucks, military trucks, emergency response vehicles, portable floodlights, and field response equipment spread across the road. The location should feel like Marine Drive after a city-scale disaster: wet reflective asphalt, scattered rubble, damaged vehicles, smoke in the air, broken roadside elements, emergency cables, and distant fires.\n\nThe Marine Drive geography must be clearly readable: the curved sea-facing promenade and tetrapods on one side, old Mumbai residential buildings on the other side, and the long road leading toward the smoke-filled danger zone.\n\nComposition:\nWide elevated cinematic angle from behind the crowd.\nThe crowd occupies the lower foreground.\nBarricades and control wire barriers divide the civilians from the military zone.\nSoldiers, trucks, and emergency activity fill the midground.\nThe road curves into the background toward thick smoke and disaster atmosphere.\nThe creature itself should not be the focus; the focus is the human crisis, containment failure, and scale of the location.\n\nLighting:\nDark diffused lighting.\nDouble diffused storm-heavy atmosphere.\nCool desaturated blue-grey color palette.\nHumid haze, smoke, and soft floodlight glow.\nEmergency lights should be visible but not overly bright.\nNo harsh direct light.\n\nVisual style:\nHigh-budget Indian live-action disaster film frame.\nGrounded realism.\nNatural crowd behavior.\nPractical production design.\nCinematic depth.\nTense, unstable, large-scale atmosphere.\n\nNegative prompt:\noverly religious crowd, too many flower garlands, festival atmosphere, celebration mood, clean protest scene, bright lighting, futuristic vehicles, cartoon, illustration, fake CGI textures, oversaturated colors, empty road, clean polished city",
+  "resemblance": 3,
+  "scale": "2x"
+ },
+ "response_headers": {
+  "cache-control": "no-cache, private",
+  "content-type": "application/json",
+  "x-request-id": "glb-26543263a361005c09ed65d09d408e39"
+ },
+ "response_body": {
+  "errors": {
+   "prompt": [
+    "The prompt field must not be greater than 2000 characters."
+   ]
+  },
+  "message": "The prompt field must not be greater than 2000 characters."
+ },
+ "extra": {
+  "duration_ms": 3650,
+  "json": true,
+  "truncated": false
+ }
+}

@@ -1,0 +1,230 @@
+{
+ "service": "higgsfield",
+ "transport": "fetch",
+ "captured_at": "2026-09-23T07:40:33.404Z",
+ "page_url": "https://higgsfield.ai/ai/image?model=nano-banana-2",
+ "method": "GET",
+ "url": "https://fnf-api-gw.higgsfield.ai/fnf/jobs/accessible?size=50",
+ "status": 200,
+ "request_headers": {
+  "accept-language": "en",
+  "authorization": "[REDACTED]",
+  "baggage": "sentry-environment=production,sentry-release=5da87d73684c93dc627ab2e298a49edf6fe8c77e,sentry-public_key=381a4c00affffdbcd21f746baa2cc263,sentry-trace_id=a4386350fbef421596deccc46ef9c671,sentry-org_id=4509169762697216,sentry-transaction=%2F_private%2Fai%2Fimage,sentry-sampled=false,sentry-sample_rand=0.2776249602645854,sentry-sample_rate=0.004711",
+  "content-type": "application/json",
+  "sentry-trace": "a4386350fbef421596deccc46ef9c671-b594cb2dc0fed858-0",
+  "traceparent": "00-a4386350fbef421596deccc46ef9c671-a241aece9544972c-00",
+  "x-datadome-clientid": "vGNC3G2RXvy6oczjxBOECO6D~onPWT0LjitqP47_8FtAFWfS~6y5vOlhbaHieR81PfYxaFOJGhvf_cUz88xmYNgIcY9wC5s_yCNzG6xUNM1GX7f5xGg911QC7fEuZwqs"
+ },
+ "request_body": null,
+ "response_headers": {
+  "content-type": "application/json"
+ },
+ "response_body": {
+  "has_more": true,
+  "jobs": [
+   {
+    "board_ids": [],
+    "can_bypass_ip": false,
+    "cluster_hash": "a405244e48edf7ea126eb774ffbacf31",
+    "comments_count": 0,
+    "cost": null,
+    "created_at": 1789321071.463647,
+    "has_unresolved_comment": false,
+    "id": "44df4dac-5b91-47dc-ad05-cb0383c8e2d0",
+    "ip_check_finished": true,
+    "ip_detected": false,
+    "is_favourite": false,
+    "is_viewed": true,
+    "job_set_client_meta": null,
+    "job_set_id": "603c2503-c49a-483b-a574-fb3e5f9aa02f",
+    "job_set_parent_id": null,
+    "job_set_type": "gpt_image_2_5",
+    "meta": {
+     "cost": "{\"request_id\": \"req_d506177ecdad41dabdca8a60f6ac4f17\", \"input_text\": \"0.0005\", \"input_image\": \"0.0016\", \"output_text\": \"0.0000\", \"output_image\": \"0.0312\", \"input_text_tokens\": 109, \"input_image_tokens\": 204, \"cached_text_input_tokens\": 0, \"cached_image_input_tokens\": 0, \"output_text_tokens\": 0, \"output_image_tokens\": 1039}"
+    },
+    "params": {
+     "aspect_ratio": "3:2",
+     "background": "opaque",
+     "height": 688,
+     "medias": [
+      {
+       "data": {
+        "id": "4da90cc3-e5e4-4bda-9426-453ce9c968ea",
+        "type": "media_input",
+        "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/4da90cc3-e5e4-4bda-9426-453ce9c968ea.jpg"
+       },
+       "role": "image"
+      }
+     ],
+     "model": "flare",
+     "prompt": "A carved sandstone relief panel for above a Hindu temple door, based on this reference: seated Ganesha in the centre under a small cusped arch, flanked by two s…",
+     "quality": "high",
+     "reference_elements": [],
+     "remove_bg": false,
+     "resolution": "1k",
+     "width": 1024
+    },
+    "published_at": null,
+    "representation": null,
+    "result": null,
+    "results": {
+     "min": {
+      "type": "image",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/hf_20260913_173751_44df4dac-5b91-47dc-ad05-cb0383c8e2d0.png"
+     },
+     "raw": {
+      "type": "image",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/hf_20260913_173751_44df4dac-5b91-47dc-ad05-cb0383c8e2d0.png"
+     }
+    },
+    "status": "completed",
+    "trace_id": "44df4dac-5b91-47dc-ad05-cb0383c8e2d0",
+    "user": {
+     "avatar_url": null,
+     "full_name": "Faible Subscriptions 1",
+     "id": "user_36mMlkuUFLoVEvOM0icTtFFDdlE",
+     "username": "floatingdragonfly_hyper"
+    },
+    "user_id": "user_36mMlkuUFLoVEvOM0icTtFFDdlE",
+    "workspace_name": "Faible 2'"
+   },
+   {
+    "board_ids": [],
+    "can_bypass_ip": false,
+    "cluster_hash": "f3f9c68d07c2ec1087d8c1d3fb3baf88",
+    "comments_count": 0,
+    "cost": null,
+    "created_at": 1789321071.081435,
+    "has_unresolved_comment": false,
+    "id": "2c6f8f90-6d9c-4d75-bef0-435c638cce7d",
+    "ip_check_finished": true,
+    "ip_detected": false,
+    "is_favourite": false,
+    "is_viewed": true,
+    "job_set_client_meta": null,
+    "job_set_id": "ec1b43cb-30b5-47d8-a223-388826379aeb",
+    "job_set_parent_id": null,
+    "job_set_type": "gpt_image_2_5",
+    "meta": {
+     "cost": "{\"request_id\": \"req_92cb5bf5d91e4a4f877b6b025e1f5ed6\", \"input_text\": \"0.0006\", \"input_image\": \"0.0027\", \"output_text\": \"0.0000\", \"output_image\": \"0.0312\", \"input_text_tokens\": 130, \"input_image_tokens\": 338, \"cached_text_input_tokens\": 0, \"cached_image_input_tokens\": 0, \"output_text_tokens\": 0, \"output_image_tokens\": 1039}"
+    },
+    "params": {
+     "aspect_ratio": "2:3",
+     "background": "opaque",
+     "height": 1024,
+     "medias": [
+      {
+       "data": {
+        "id": "7bcbb094-97b9-42ba-9c24-7308e5c9f3d9",
+        "type": "media_input",
+        "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/7bcbb094-97b9-42ba-9c24-7308e5c9f3d9.jpg"
+       },
+       "role": "image"
+      }
+     ],
+     "model": "flare",
+     "prompt": "Recreate this exact carved stone guardian figure (dvarapala) as a complete, uncropped standing statue: a man in a turban and knee-length tunic with a sash, both…",
+     "quality": "high",
+     "reference_elements": [],
+     "remove_bg": false,
+     "resolution": "1k",
+     "width": 688
+    },
+    "published_at": null,
+    "representation": null,
+    "result": null,
+    "results": {
+     "min": {
+      "type": "image",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/hf_20260913_173751_2c6f8f90-6d9c-4d75-bef0-435c638cce7d.png"
+     },
+     "raw": {
+      "type": "image",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/hf_20260913_173751_2c6f8f90-6d9c-4d75-bef0-435c638cce7d.png"
+     }
+    },
+    "status": "completed",
+    "trace_id": "2c6f8f90-6d9c-4d75-bef0-435c638cce7d",
+    "user": {
+     "avatar_url": null,
+     "full_name": "Faible Subscriptions 1",
+     "id": "user_36mMlkuUFLoVEvOM0icTtFFDdlE",
+     "username": "floatingdragonfly_hyper"
+    },
+    "user_id": "user_36mMlkuUFLoVEvOM0icTtFFDdlE",
+    "workspace_name": "Faible 2'"
+   },
+   {
+    "board_ids": [],
+    "can_bypass_ip": false,
+    "cluster_hash": "8bababf77e547de08104e429724d54d6",
+    "comments_count": 0,
+    "cost": null,
+    "created_at": 1789321069.325,
+    "has_unresolved_comment": false,
+    "id": "8a89a56e-639e-41ae-a0fc-fc03f6312bb7",
+    "ip_check_finished": true,
+    "ip_detected": false,
+    "is_favourite": false,
+    "is_viewed": true,
+    "job_set_client_meta": null,
+    "job_set_id": "39f26e7f-3878-4ede-947c-80c954afec7b",
+    "job_set_parent_id": null,
+    "job_set_type": "gpt_image_2_5",
+    "meta": {
+     "cost": "{\"request_id\": \"req_0ec96d16034644358d76b9bcfcfb06bf\", \"input_text\": \"0.0007\", \"input_image\": \"0.0061\", \"output_text\": \"0.0000\", \"output_image\": \"0.0393\", \"input_text_tokens\": 137, \"input_image_tokens\": 768, \"cached_text_input_tokens\": 0, \"cached_image_input_tokens\": 0, \"output_text_tokens\": 0, \"output_image_tokens\": 1309}"
+    },
+    "params": {
+     "aspect_ratio": "4:3",
+     "background": "opaque",
+     "height": 880,
+     "medias": [
+      {
+       "data": {
+        "id": "3bf9e256-2541-4bcc-b49f-c99b4eac6797",
+        "type": "media_input",
+        "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/3bf9e256-2541-4bcc-b49f-c99b4eac6797.jpg"
+       },
+       "role": "image"
+      }
+     ],
+     "model": "flare",
+     "prompt": "Recreate this exact stone lion statue as a complete, uncropped sculpture: a standing male lion with an open roaring mouth, thick deeply grooved stylised mane, m…",
+     "quality": "high",
+     "reference_elements": [],
+     "remove_bg": false,
+     "resolution": "1k",
+     "width": 1168
+    },
+    "published_at": null,
+    "representation": null,
+    "result": null,
+    "results": {
+     "min": {
+      "type": "image",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/hf_20260913_173749_8a89a56e-639e-41ae-a0fc-fc03f6312bb7.png"
+     },
+     "raw": {
+      "type": "image",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/hf_20260913_173749_8a89a56e-639e-41ae-a0fc-fc03f6312bb7.png"
+     }
+    },
+    "status": "completed",
+    "trace_id": "8a89a56e-639e-41ae-a0fc-fc03f6312bb7",
+    "user": {
+     "avatar_url": null,
+     "full_name": "Faible Subscriptions 1",
+     "id": "user_36mMlkuUFLoVEvOM0icTtFFDdlE",
+     "username": "floatingdragonfly_hyper"
+    },
+    "user_id": "user_36mMlkuUFLoVEvOM0icTtFFDdlE",
+    "workspace_name": "Faible 2'"
+   }
+  ]
+ },
+ "extra": {
+  "duration_ms": 1580,
+  "json": true,
+  "truncated": false
+ }
+}
