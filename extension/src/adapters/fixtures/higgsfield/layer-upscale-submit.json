@@ -1,0 +1,72 @@
+{
+ "service": "higgsfield",
+ "transport": "fetch",
+ "captured_at": "2026-09-23T09:31:33.619Z",
+ "page_url": "https://higgsfield.ai/ai/image?model=nano-banana-2",
+ "method": "POST",
+ "url": "https://layer-worker.higgsfield.ai/api/layer-projects/2893613f-3d3b-47c0-a99a-53f875556d36/generations",
+ "status": 202,
+ "request_headers": {
+  "authorization": "[REDACTED]",
+  "content-type": "application/json",
+  "idempotency-key": "0844f6e1-fa8f-4bb0-9e82-9f9299ac1852"
+ },
+ "request_body": {
+  "input_images": [
+   {
+    "id": "314e36aa-f94a-471d-81e3-053a93595cdb",
+    "type": "media_input"
+   }
+  ],
+  "params": {
+   "denoise": 0.2,
+   "face_enhancement": false,
+   "face_enhancement_creativity": 0,
+   "face_enhancement_strength": 0.8,
+   "model": "Standard V2",
+   "output_height": 768,
+   "output_width": 1376,
+   "sharpen": 0.3
+  },
+  "type": "topaz_image"
+ },
+ "response_headers": {
+  "content-length": "622",
+  "content-type": "application/json",
+  "x-request-id": "0844f6e1-fa8f-4bb0-9e82-9f9299ac1852"
+ },
+ "response_body": {
+  "completedAt": null,
+  "createdAt": "2026-09-23T09:31:33.380Z",
+  "destination": "project_version",
+  "error": null,
+  "id": "0844f6e1-fa8f-4bb0-9e82-9f9299ac1852",
+  "input_images": [
+   {
+    "id": "314e36aa-f94a-471d-81e3-053a93595cdb",
+    "type": "media_input",
+    "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/314e36aa-f94a-471d-81e3-053a93595cdb.png"
+   }
+  ],
+  "jobId": null,
+  "params": {
+   "denoise": 0.2,
+   "face_enhancement": false,
+   "face_enhancement_creativity": 0,
+   "face_enhancement_strength": 0.8,
+   "model": "Standard V2",
+   "output_height": 768,
+   "output_width": 1376,
+   "sharpen": 0.3
+  },
+  "prompt": null,
+  "result": null,
+  "status": "queued",
+  "type": "topaz_image"
+ },
+ "extra": {
+  "duration_ms": 1886,
+  "json": true,
+  "truncated": false
+ }
+}

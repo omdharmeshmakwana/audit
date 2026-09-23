@@ -55,6 +55,23 @@ describe("higgsfield adapter", () => {
     expect(obs.submittedJobIds).toEqual([]);
   });
 
+  it("tracks an image upscale submitted on the layer service", () => {
+    expect(higgsfield.observe(fixture("layer-upscale-submit.json")).submittedJobIds).toEqual([
+      "0844f6e1-fa8f-4bb0-9e82-9f9299ac1852",
+    ]);
+  });
+
+  it("extracts a completed layer upscale under both its generation id and its job id", () => {
+    const outs = higgsfield.observe(fixture("layer-generations-list.json")).outputs;
+    expect(outs.map((o) => o.job_id)).toEqual([
+      "3e2085ef-ad2e-4a21-9047-8462c66a0390",
+      "3c517970-d937-4b05-8cb1-6819f77e14ed",
+    ]);
+    expect(new Set(outs.map((o) => o.url)).size).toBe(1);
+    expect(outs[0]!.url).toContain("3c517970-d937-4b05-8cb1-6819f77e14ed.png");
+    // The in-progress generation in the same list yields nothing.
+  });
+
   it("recovers the job id from a downloaded file name", () => {
     const dl = fixture("download-blob.json");
     expect(higgsfield.jobIdFromFilename(String(dl.extra.filename))).toBe("253edf08-5200-4819-9677-5f98df466685");

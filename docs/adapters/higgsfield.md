@@ -37,7 +37,8 @@ All API traffic is `fetch` + JSON; uploads are XHR `PUT` to S3. No WebSocket see
 | Upload (1/3) | `POST /fnf/media/batch` `{mimetypes, source}` → `[{id, upload_url (presigned S3), url (uploads CDN)}]` | yes |
 | Upload (2/3) | XHR `PUT <presigned S3 url>` with the file | yes |
 | Upload (3/3) | `POST /fnf/media/{id}/upload` `{filename}` → `{id, status: "uploaded"}` | yes |
-| **Image upscale** | `POST layer-worker.higgsfield.ai/api/layer-projects/{project}/generations` `{type: "topaz_image", input_images: [{id, type: "media_input"}], params: {model, denoise, sharpen, output_width, output_height, …}}` → 202 `{id, status: "queued"}` | submit yes; **completion not seen** (UNVERIFIED) |
+| **Image upscale** | `POST layer-worker.higgsfield.ai/api/layer-projects/{project}/generations` `{type: "topaz_image", input_images: [{id, type: "media_input"}], params: {model, denoise, sharpen, output_width, output_height, …}}` → 202 `{id, status: "queued", jobId: null}` | yes |
+| Image upscale status | `GET layer-worker…/generations/{id}` and `…/generations?limit=N` → `{id, jobId, status: in_progress \| completed, completedAt, result: {url}}`. `result.url` is on the outputs CDN named `hf_…_<jobId>.png` | yes (completed item seen) |
 | Video upscale | `POST /fnf/jobs/topaz-video?dry_run=true` → `{cost: 8}` (price quote only). Real submit presumably the same path without `dry_run` | quote only — submit UNVERIFIED |
 | **Delete** | `DELETE /fnf/assets` `{"asset_ids": [job_id…]}` → empty 200 | yes |
 | View tracking | `POST /fnf/jobs/{id}/view`, `/viewed` | noise |
@@ -78,12 +79,15 @@ All API traffic is `fetch` + JSON; uploads are XHR `PUT` to S3. No WebSocket see
 - **Fingerprinting (implemented, DECISIONS #11):** completion hash of own jobs' `results.raw.url`
   / `result_url` (method 1), in-page hash of the Blob behind the blob URL (method 2), and
   filename → job id → output hash (method 3). Download records carry `extra.fingerprint`.
+- **Verified 2026-09-23:** a video download's in-page blob hash equalled the CDN output hash
+  found via the filename's job id (`6e7fe35f…`, `agree: true`).
 
 ## Flows captured
 
 - [x] image generation (`nano_banana_flash`, completed)
 - [x] video generation (`cinematic_studio_video_4_0`, completed)
-- [~] upscale — image upscale submitted (layer-worker, completion not seen); video upscale price quote only
+- [x] image upscale (layer-worker `topaz_image`: submit, in-progress and completed shapes)
+- [~] video upscale — price quote (`dry_run`) only; real submit UNVERIFIED
 - [x] cancelled job (two)
 - [x] failed job (`78945fb1`, via notification, `job_cost: 0`)
 - [x] download (video and image)

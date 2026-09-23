@@ -5,6 +5,8 @@ import type { CaptureRecord } from "../shared/capture";
 import { EMPTY, type FingerprintAdapter, type JobOutput, type Observation } from "./types";
 
 const API = /^https:\/\/fnf-api-gw\.higgsfield\.ai\//;
+// Image upscale (topaz_image) runs on the layer editor service, not the main API.
+const LAYER_GENERATIONS = /^https:\/\/layer-worker\.higgsfield\.ai\/api\/layer-projects\/[^/]+\/generations/;
 const SUBMIT = /\/fnf\/jobs\/v2\/[^/?]+(\?|$)/;
 const JOB_DETAIL = /\/fnf\/jobs\/[0-9a-f-]{36}(\?|$)/;
 const HISTORY = /\/fnf\/jobs\/accessible/;
@@ -53,8 +55,34 @@ export function parseSse(text: string): { event: string; data: unknown }[] {
   return out;
 }
 
+/**
+ * Layer generation {id, jobId, status, result: {url}}. The submit response has only `id`
+ * (jobId is null until it starts); the output file is named after `jobId`. So a completed
+ * generation yields the output under both ids: `id` for method 1 (matches the submit),
+ * `jobId` for method 3 (matches the download filename). Same URL, hashed once.
+ */
+function outputsFromLayerGeneration(g: unknown): JobOutput[] {
+  if (!isObj(g) || g.status !== "completed" || !isObj(g.result) || typeof g.result.url !== "string") return [];
+  const url = g.result.url;
+  const ids = [g.id, g.jobId].filter((v): v is string => typeof v === "string" && UUID.test(v));
+  return ids.map((job_id) => ({ service: "higgsfield", job_id, url, media_type: "image", status: "completed", source: "job_detail" }));
+}
+
+function observeLayer(rec: CaptureRecord): Observation {
+  const body = rec.response_body;
+  if (rec.method === "POST" && rec.status === 202 && isObj(body) && typeof body.id === "string") {
+    return { submittedJobIds: [body.id], outputs: [] };
+  }
+  if (rec.method === "GET") {
+    const items = isObj(body) && Array.isArray(body.items) ? body.items : [body];
+    return { submittedJobIds: [], outputs: items.flatMap(outputsFromLayerGeneration) };
+  }
+  return EMPTY;
+}
+
 function observe(rec: CaptureRecord): Observation {
   const url = rec.url ?? "";
+  if (LAYER_GENERATIONS.test(url)) return observeLayer(rec);
   if (!API.test(url)) return EMPTY;
   const body = rec.response_body;
 

@@ -1,0 +1,87 @@
+{
+ "service": "higgsfield",
+ "transport": "fetch",
+ "captured_at": "2026-09-23T09:31:36.860Z",
+ "page_url": "https://higgsfield.ai/ai/image?model=nano-banana-2",
+ "method": "GET",
+ "url": "https://layer-worker.higgsfield.ai/api/layer-projects/2893613f-3d3b-47c0-a99a-53f875556d36/generations?limit=20",
+ "status": 200,
+ "request_headers": {
+  "authorization": "[REDACTED]"
+ },
+ "request_body": null,
+ "response_headers": {
+  "content-type": "application/json",
+  "x-request-id": "89384be1-50a1-4691-8101-3de8bfac88f2"
+ },
+ "response_body": {
+  "items": [
+   {
+    "completedAt": null,
+    "createdAt": "2026-09-23T09:31:33.380Z",
+    "destination": "project_version",
+    "error": null,
+    "id": "0844f6e1-fa8f-4bb0-9e82-9f9299ac1852",
+    "input_images": [
+     {
+      "id": "314e36aa-f94a-471d-81e3-053a93595cdb",
+      "type": "media_input",
+      "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/314e36aa-f94a-471d-81e3-053a93595cdb.png"
+     }
+    ],
+    "jobId": "30a8e8fd-c4b1-4595-8d37-78421bacf760",
+    "params": {
+     "denoise": 0.2,
+     "face_enhancement": false,
+     "face_enhancement_creativity": 0,
+     "face_enhancement_strength": 0.8,
+     "model": "Standard V2",
+     "output_height": 768,
+     "output_width": 1376,
+     "sharpen": 0.3
+    },
+    "prompt": null,
+    "result": null,
+    "status": "in_progress",
+    "type": "topaz_image"
+   },
+   {
+    "completedAt": "2026-09-23T07:55:04.036Z",
+    "createdAt": "2026-09-23T07:53:58.988Z",
+    "destination": "project_version",
+    "error": null,
+    "id": "3e2085ef-ad2e-4a21-9047-8462c66a0390",
+    "input_images": [
+     {
+      "id": "6a87fae8-04c4-442e-aaad-deb571f20947",
+      "type": "media_input",
+      "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/6a87fae8-04c4-442e-aaad-deb571f20947.png"
+     }
+    ],
+    "jobId": "3c517970-d937-4b05-8cb1-6819f77e14ed",
+    "params": {
+     "denoise": 0.2,
+     "face_enhancement": false,
+     "face_enhancement_creativity": 0,
+     "face_enhancement_strength": 0.8,
+     "model": "Standard V2",
+     "output_height": 768,
+     "output_width": 1376,
+     "sharpen": 0.3
+    },
+    "prompt": null,
+    "result": {
+     "url": "https://d8j0ntlcm91z4.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/hf_20260923_075359_3c517970-d937-4b05-8cb1-6819f77e14ed.png"
+    },
+    "status": "completed",
+    "type": "topaz_image"
+   }
+  ],
+  "nextCursor": null
+ },
+ "extra": {
+  "duration_ms": 134,
+  "json": true,
+  "truncated": false
+ }
+}

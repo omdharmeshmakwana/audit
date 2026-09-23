@@ -35,7 +35,7 @@ over a **Pusher WebSocket**, not polled. Pusher frames double-encode: `{"event",
 | Video cost estimate | `POST /app/api/video/simulate/generate` → `clips[].creditsCost`, `totalCreditsCost` | yes |
 | Video settings helper | `POST /app/api/video/generate/auto` | yes (not a submit) |
 | **Submit (video)** | `POST /app/api/video/generate?return_creations=true` `{video: {clips: [{model, mode, prompt, negativePrompt, duration, resolution, aspectRatio, references: [{name, type, url: "creation:<identifier>"}], withSoundEffects}]}}` → `{data: {creations: [...]}}` (tool `video-generator`) | yes (Kling Omni 3, 575 credits) |
-| Video completion | WS `creation.updated` `queued` → `processing` seen; **`completed` shape UNVERIFIED** (log ended while processing) | partial |
+| Video completion | WS `creation.updated` `queued` → `processing` → `completed` (~2 min), then `creation.preview-grid.ready` | yes |
 | Failed job (after start) | UNVERIFIED — not seen. `rollbackCredits` in video metadata suggests credits are returned on failure | |
 | Cancel | no cancel endpoint seen; deleting a processing creation (`soft-delete`) was observed | |
 
@@ -73,7 +73,7 @@ over a **Pusher WebSocket**, not polled. Pusher frames double-encode: `{"event",
 ## Flows captured
 
 - [x] image generation (`seedream-5-pro`, `gpt-2-mini`, `imagen-nano-banana-2`; completed via WS)
-- [~] video generation (Kling Omni 3 submitted and processing; completion not captured)
+- [x] video generation (Kling Omni 3: submitted, processing, completed; downloaded and hashed by re-fetch)
 - [x] upscale (`enhance-magnific-creative`, submitted; deleted while processing)
 - [~] failed / cancelled: a 422 rejected submit and a delete-while-processing; no after-start failure
 - note: 12 creations arrived over the project channel with **no submit from this browser**
