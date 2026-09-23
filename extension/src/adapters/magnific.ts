@@ -9,6 +9,7 @@ import type { CaptureRecord } from "../shared/capture";
 import {
   bodyFileSha,
   isObj,
+  normalizeUrl,
   num,
   str,
   type ActivityStatus,
@@ -224,7 +225,7 @@ function parseUpload(rec: CaptureRecord): Capture[] | null {
 }
 
 function parse(rec: CaptureRecord): Capture[] | null {
-  const url = rec.url ?? "";
+  const url = normalizeUrl(rec.url);
   if (rec.transport === "ws" && PUSHER.test(url)) return parsePusher(rec);
   if (rec.method === "POST" && RENDER.test(url)) return parseRender(rec);
   if (rec.method === "POST" && VIDEO.test(url)) return parseVideo(rec);

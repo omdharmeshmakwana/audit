@@ -7,7 +7,7 @@
 // Never reads the local filesystem; keeps only a download's file name, never its path.
 
 import { adapterFor } from "../adapters";
-import { bodyFileSha } from "../adapters/types";
+import { bodyFileSha, normalizeUrl } from "../adapters/types";
 import { SERVER_URL, serviceForHost, type CaptureRecord } from "../shared/capture";
 import { redactUrl } from "../shared/redact";
 import { clearAssetState, fingerprintDownload, hashOutput, recordBlob, refetchDownload } from "./assets";
@@ -82,7 +82,7 @@ async function onCapture(record: CaptureRecord, signedUrls: Record<string, strin
   }
   const adapter = adapterFor(record.service);
   if (!adapter) return;
-  const url = record.url ?? "";
+  const url = normalizeUrl(record.url);
   let captures = adapter.parse(record);
   // Only matched endpoints can be "unknown"; everything else unparsed is simply irrelevant.
   if (captures === null && !adapter.patterns.some((p) => p.test(url))) captures = [];

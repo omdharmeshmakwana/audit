@@ -80,6 +80,13 @@ describe("magnific adapter", () => {
     expect(c.outputs[0]!.media_type).toBe("image");
   });
 
+  it("matches the Pusher socket even when its URL carries an explicit :443", () => {
+    const rec = fixture("ws-creation-completed.json");
+    rec.url = rec.url!.replace("ak-data.magnific.com/", "ak-data.magnific.com:443/");
+    expect(rec.url).toContain(":443/");
+    expect(one<Completed>(magnific.parse(rec)).job_id).toBe("iGX0Hoj3uK");
+  });
+
   it("handles Pusher data already parsed to an object", () => {
     const rec = fixture("ws-creation-completed.json");
     const body = rec.response_body as { data: unknown };

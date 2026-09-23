@@ -5,6 +5,7 @@ import type { CaptureRecord } from "../shared/capture";
 import {
   bodyFileSha,
   isObj,
+  normalizeUrl,
   num,
   str,
   type ActivityKind,
@@ -269,7 +270,7 @@ function parseLayer(rec: CaptureRecord): Capture[] | null {
 }
 
 function parse(rec: CaptureRecord): Capture[] | null {
-  const url = rec.url ?? "";
+  const url = normalizeUrl(rec.url);
   const body = rec.response_body;
 
   if (LAYER_GENERATIONS.test(url)) return parseLayer(rec);

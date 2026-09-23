@@ -112,3 +112,14 @@ export function bodyFileSha(body: unknown): string | null {
   }
   return null;
 }
+
+/** Canonical form for pattern matching: the URL parser drops default ports (`:443`) and
+ *  normalises case, so `wss://host:443/app` and `wss://host/app` match the same pattern. */
+export function normalizeUrl(url: string | undefined): string {
+  if (!url) return "";
+  try {
+    return new URL(url).href;
+  } catch {
+    return url;
+  }
+}
