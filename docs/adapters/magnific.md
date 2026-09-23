@@ -30,6 +30,7 @@ over a **Pusher WebSocket**, not polled. Pusher frames double-encode: `{"event",
 | **Download** | `POST /app/api/creations/download` `{creations: [<numeric id>], extension}` (empty 200), then the browser downloads the signed CDN URL with `&download=<filename>` | yes |
 | **Delete** | `PUT /app/api/projects/bulk/trash/soft-delete` `{files_external_ids: ["<numeric id>"]}` | yes |
 | Pusher auth | `POST /app/broadcasting/auth` | yes (response redacted) |
+| **Upload (reference)** | `POST ak-data.magnific.com/app/api/creations` multipart `{file, tool: "upload-reference"}` → 201 `{creation: {identifier, tool: "upload-reference", status: "completed", url, metadata: {original_filename}}}`. The upload is itself a creation; generations reference it as `creation:<identifier>` | yes |
 | **Upscale** | `POST ak-data.magnific.com/app/api/render/v4/upscale` `{input_image: "creation:<identifier>", mode: "enhance-magnific-creative", scale, creativity, resemblance, hdr, fractality, engine, optimised, prompt, metadata: {previous: <numeric id>}}` → `{creation: {...}}` (tool `enhance`) | yes (1080 credits) |
 | Rejected submit | same endpoint → **422** `{errors: {prompt: ["…must not be greater than 2000 characters."]}}`. No creation, no credits | yes |
 | Video cost estimate | `POST /app/api/video/simulate/generate` → `clips[].creditsCost`, `totalCreditsCost` | yes |
@@ -69,6 +70,18 @@ over a **Pusher WebSocket**, not polled. Pusher frames double-encode: `{"event",
   so they never reach storage-sent records or the server (DECISIONS #14).
 - Method 3: filename → `identifier` → output hash.
 - Tokens carry `exp=<unix>`; seen expiring ~5 days out. Re-fetching after expiry is UNVERIFIED.
+- **Verified 2026-09-23:** method 1 hashed `ks6OBy616B` on completion (`2f9b8ca3…`) and the
+  download's re-fetch hash matched it (`agree: true`). A creation from another browser in the
+  same project (`6AdT1cyiJO`) was correctly not hashed.
+
+## Cross-service chain observed (2026-09-23)
+
+Higgsfield job `c09533a2` → output `b71d1435…` (completion, blob and filename hashes agree) →
+downloaded → selected for upload on Magnific (page blob `b71d1435…`, 1,212,325 bytes) →
+`POST /app/api/creations` → creation `CqUjWZfEEy` → referenced by generation `ks6OBy616B`
+(`creation:CqUjWZfEEy`) → output `2f9b8ca3…` → downloaded (re-fetch agrees).
+The upload ↔ hash join here is by filename + size (file-picker blob); Phase 2 hashes the
+multipart `File` itself inside the request for an exact join.
 
 ## Flows captured
 
@@ -81,3 +94,4 @@ over a **Pusher WebSocket**, not polled. Pusher frames double-encode: `{"event",
   capturing browser's own submits, never from project-channel events.
 - [x] download (re-fetched and hashed)
 - [x] delete (soft delete)
+- [x] upload (reference image, from a Higgsfield output)
