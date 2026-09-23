@@ -20,6 +20,21 @@ npm install && npm run build                      # → extension/dist
 
 Load the extension: `chrome://extensions` → Developer mode → **Load unpacked** → `extension/dist`.
 
+## Database and CLI (from `server/`)
+
+```sh
+.venv/bin/python -m alembic upgrade head     # create / migrate tables
+.venv/bin/python -m faible.cli seed          # demo users (password: changeme), project, chain
+.venv/bin/python -m faible.cli verify-log    # walk the hash chain
+.venv/bin/python -m faible.cli rebuild       # replay the log; checksum must match
+.venv/bin/python -m faible.cli checksum
+.venv/bin/python -m faible.cli events-doc    # regenerate docs/EVENTS.md
+../scripts/demo_phase1.sh                    # Phase 1 demo on a throwaway database
+```
+
+API: `POST /api/v1/auth/login`, `/auth/refresh`, `/auth/register`, `GET /api/v1/me`,
+`POST /api/v1/ingest/events` (bearer token). Event schema: `docs/EVENTS.md`.
+
 ## Phase 0 — discovery
 
 The extension runs in capture-all mode. Every JSON response (and WebSocket/SSE message)

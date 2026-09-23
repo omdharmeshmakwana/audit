@@ -62,3 +62,47 @@ Every deviation from `faible-tracking-v1-prompt.md`, dated. Newest last.
     the record is queued, and keeps the original only in its local fingerprint state
     (`chrome.storage.local`), so it is never sent to the server or written to the log.
     Rule 9 is read as "secrets never leave the extension"; this keeps that.
+
+## 2026-09-23 — Phase 1
+
+15. **Hash covers the row minus `seq` and `hash`.** `seq` is assigned by the database after
+    the hash is computed; ordering is protected by `prev_hash` instead. Appends are serialised
+    with a transaction-scoped advisory lock so concurrent ingests cannot fork the chain.
+    `recorded_at` is set by the server (never accepted from a client: `EventIn` forbids it).
+16. **Append-only is enforced in the database.** Triggers raise on `UPDATE`, `DELETE` and
+    `TRUNCATE` of `events`. Only a superuser disabling triggers (`session_replication_role`)
+    can alter a row, and `verify-log` then reports it (see `scripts/demo_phase1.sh`).
+17. **Three event types added to the §3 list:** `entity.created`, `entity.reference_added`,
+    `shot.entity_added`. The spec's seed needs characters and reference images, and every
+    derived table must come from events, but §3 had no event for them. Per §12, changes to the
+    event schema *after* Phase 1 need the user's approval.
+18. **Characters, environments and props share one `entities` table** with `entity_type`.
+    Identical shapes; `ReferenceAsset` and `ShotEntity` already key on (type, id).
+19. **`activities.shot_id`** (not in §2.1) holds the active shot at capture time (§4.2); null
+    means unassigned, which the `unassigned_generation` rule needs.
+20. **`assets.registered`.** A version, link or reference can name an asset by sha256 before
+    its bytes are registered; the row exists with `registered = false` until an
+    `asset.registered` event describes it (whose evidence then becomes the asset's).
+21. **Edges resolve late, by hash or by service location.** `generation.requested` inputs and
+    `generation.completed` outputs are stored immediately; if only a service id or URL is
+    known (Magnific `creation:<id>`, Higgsfield media id, output URL), `asset_id` is filled in
+    when an asset with that location appears. This is what joins a Magnific output to a
+    Higgsfield input once both are hashed to the same sha256.
+22. **Passwords are not in the log.** Argon2 hashes live in `user_credentials`, which is neither
+    event-sourced nor rebuilt (an append-only log can never forget a credential).
+    `user.registered` / `user.logged_in` are logged.
+23. **Server auth and `POST /api/v1/ingest/events` are in Phase 1**, because ingest must know its
+    actor (hard rule 8). JWT access (15 min) + refresh (7 days), HS256 with a key from
+    `FAIBLE_JWT_SECRET` or a random key persisted in `data/jwt_secret`. The extension side of
+    auth, the httpOnly web cookie, and `/ingest/asset` stay in Phase 2.
+24. **Ingest results are per event** (`accepted | duplicate | conflict | rejected`) rather than
+    all-or-nothing, so one malformed event cannot wedge the extension's retry queue. A reused
+    `event_id` with different content is a `conflict`, not a silent duplicate.
+25. **`shot.updated` cannot clear a field** (null = unchanged). Clearing a budget, if needed,
+    gets its own event later.
+26. **Status vocabulary.** The log uses the spec's `queued|running|succeeded|failed|cancelled`;
+    Phase 2 adapters map service values (Higgsfield `in_progress`/`completed`, Magnific
+    `processing`/`completed`) onto it.
+27. **macOS marks files in `server/.venv` hidden, and Python 3.13+ skips hidden `.pth` files**,
+    which silently breaks the editable install. Tests set `pythonpath = ["."]`; the CLI is run
+    as `python -m faible.cli` from `server/` (or `chflags nohidden` the `__editable__*` files).

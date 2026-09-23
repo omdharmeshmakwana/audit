@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     data_dir: Path = REPO_ROOT / "data"
     # Phase 0 only: accept capture-all dumps from the extension.
     discovery_enabled: bool = True
+    # HS256 key for extension JWTs; when unset, a random key is persisted to data/jwt_secret.
+    jwt_secret: str | None = None
 
 
 @lru_cache
