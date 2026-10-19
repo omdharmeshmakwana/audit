@@ -6,7 +6,7 @@
 
 import { locked } from "./lock";
 import type { FaibleEvent } from "./pipeline";
-import { api, NotLoggedIn } from "./session";
+import { api, getSession, NotLoggedIn } from "./session";
 
 const QUEUE_KEY = "eventQueue";
 const STATUS_KEY = "queueStatus";
@@ -33,21 +33,23 @@ async function read(): Promise<{ queue: FaibleEvent[]; status: QueueStatus }> {
 
 export async function queueState(): Promise<{ pending: number; status: QueueStatus }> {
   const { queue, status } = await read();
-  return { pending: queue.length, status };
+  const session = await getSession();
+  return { pending: queue.filter((event) => event.owner_user_id === session?.user.id).length, status };
 }
 
 export function enqueueEvents(events: FaibleEvent[]): Promise<void> {
   if (events.length === 0) return Promise.resolve();
-  return locked(async () => {
+  return getSession().then((session) => locked(async () => {
+    if (!session) return;
     const { queue, status } = await read();
-    queue.push(...events);
+    queue.push(...events.map((event) => ({ ...event, owner_user_id: event.owner_user_id ?? session.user.id })));
     while (queue.length > MAX_QUEUE) {
       queue.shift();
       status.dropped++;
     }
     await chrome.storage.local.set({ [QUEUE_KEY]: queue, [STATUS_KEY]: status });
     scheduleFlush(800);
-  });
+  }));
 }
 
 let timer: ReturnType<typeof setTimeout> | null = null;
@@ -70,14 +72,18 @@ interface IngestResult {
 export async function flush(): Promise<void> {
   const { queue } = await read();
   if (queue.length === 0) return;
-  const batch = queue.slice(0, BATCH);
+  const session = await getSession();
+  if (!session) return;
+  // Legacy unowned events cannot safely be attributed after an account switch.
+  const batch = queue.filter((event) => event.owner_user_id === session.user.id).slice(0, BATCH);
+  if (!batch.length) return;
   let results: IngestResult[];
   try {
     const res = await api("/ingest/events", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ events: batch }),
-    });
+      body: JSON.stringify({ events: batch.map((event) => { const clean = { ...event }; delete clean.owner_user_id; return clean; }) }),
+    }, session.user.id);
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
     results = ((await res.json()) as { results: IngestResult[] }).results;
   } catch (err) {
@@ -110,7 +116,7 @@ export async function flush(): Promise<void> {
       [QUEUE_KEY]: current.filter((e) => !done.has(e.event_id)),
       [STATUS_KEY]: status,
     });
-    if (current.length > batch.length) scheduleFlush(200);
+    if (current.some((event) => !done.has(event.event_id) && event.owner_user_id === session.user.id)) scheduleFlush(200);
   });
 }
 

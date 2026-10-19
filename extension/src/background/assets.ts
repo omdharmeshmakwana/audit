@@ -16,7 +16,7 @@ import { adapterFor } from "../adapters";
 import { locked } from "./lock";
 import type { PipelineState, StoredOutput } from "./pipeline";
 import { resolveDownloadFingerprint, type DownloadFingerprint } from "./resolve";
-import { api, NotLoggedIn } from "./session";
+import { api, getSession, NotLoggedIn } from "./session";
 
 const STATE_KEY = "assetState";
 const BLOB_WAIT_MS = 15_000;
@@ -71,6 +71,7 @@ export async function registerBytes(
   sha256: string,
   locations: { service: string; url?: string; service_asset_id?: string }[],
   mediaType: string | null,
+  expectedUserId?: string,
 ): Promise<boolean> {
   for (let attempt = 1; attempt <= UPLOAD_ATTEMPTS; attempt++) {
     try {
@@ -79,7 +80,7 @@ export async function registerBytes(
       form.append("locations", JSON.stringify(locations));
       if (mediaType) form.append("media_type", mediaType);
       form.append("evidence", "observed");
-      const res = await api("/ingest/asset", { method: "POST", headers: { "x-faible-sha256": sha256 }, body: form });
+      const res = await api("/ingest/asset", { method: "POST", headers: { "x-faible-sha256": sha256 }, body: form }, expectedUserId);
       if (res.ok) return true;
       if (res.status === 422) return false; // mismatch or too large: retrying won't help
     } catch (err) {
@@ -121,6 +122,7 @@ async function fetchHashRegister(out: StoredOutput): Promise<HashResult> {
       sha256,
       [{ service: out.service, url: out.url, service_asset_id: out.service_asset_id }],
       content_type,
+      out.owner_user_id,
     );
     return { sha256, bytes: buf.byteLength, content_type, registered, error: null, at };
   } catch (err) {
@@ -130,13 +132,16 @@ async function fetchHashRegister(out: StoredOutput): Promise<HashResult> {
 
 /** Hash (and register) an output once; concurrent and repeated callers share the result. */
 export async function hashOutput(out: StoredOutput, method: "completion" | "filename_job" | "upload", log: Log): Promise<HashResult> {
+  const owner = out.owner_user_id ?? (await getSession())?.user.id;
+  const output = { ...out, owner_user_id: owner };
+  const flightKey = `${owner ?? ""}:${out.url}`;
   const known = (await load()).hashes[out.url];
   if (known?.sha256) return known;
-  let p = inFlight.get(out.url);
+  let p = inFlight.get(flightKey);
   if (!p) {
-    p = fetchHashRegister(out).then(async (r) => {
-      await update((s) => void (s.hashes[out.url] = r));
-      inFlight.delete(out.url);
+    p = fetchHashRegister(output).then(async (r) => {
+      if ((await getSession())?.user.id === owner) await update((s) => void (s.hashes[out.url] = r));
+      inFlight.delete(flightKey);
       log(
         r.sha256
           ? `${out.service}: hashed output of ${out.job_id.slice(0, 10)} (${method}) sha256 ${r.sha256.slice(0, 10)}…${r.registered ? ", registered" : ", NOT registered"}`
@@ -144,7 +149,7 @@ export async function hashOutput(out: StoredOutput, method: "completion" | "file
       );
       return r;
     });
-    inFlight.set(out.url, p);
+    inFlight.set(flightKey, p);
   }
   return p;
 }

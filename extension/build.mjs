@@ -19,6 +19,7 @@ const options = {
     "main-world": "src/content/main-world.ts",
     relay: "src/content/relay.ts",
     popup: "src/popup/popup.ts",
+    login: "src/popup/login.ts",
   },
   outdir,
   bundle: true,

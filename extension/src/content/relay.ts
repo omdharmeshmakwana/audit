@@ -8,6 +8,7 @@
 
 import { MSG_TAG, type CaptureRecord } from "../shared/capture";
 import { mountPanel } from "./panel";
+import { mountPromptWarning } from "./prompt-warning";
 
 let invalidated = false;
 
@@ -50,4 +51,7 @@ window.addEventListener("message", (e: MessageEvent) => {
   });
 });
 
-if (window.top === window) mountPanel(send, () => invalidated || !contextAlive());
+if (window.top === window) {
+  mountPanel(send, () => invalidated || !contextAlive());
+}
+mountPromptWarning();

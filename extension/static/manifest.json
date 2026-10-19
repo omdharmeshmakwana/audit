@@ -1,9 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Faible",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Records Higgsfield and Magnific generations into the studio's Faible provenance log.",
-  "permissions": ["storage", "unlimitedStorage", "downloads", "alarms"],
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "downloads",
+    "alarms"
+  ],
   "host_permissions": [
     "https://*.higgsfield.ai/*",
     "https://*.magnific.com/*",
@@ -14,19 +19,42 @@
     "https://*.cdnpk.net/*",
     "http://localhost:8000/*"
   ],
-  "background": { "service_worker": "background.js" },
-  "action": { "default_popup": "popup.html", "default_title": "Faible" },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Faible"
+  },
   "content_scripts": [
     {
-      "matches": ["https://*.higgsfield.ai/*", "https://*.magnific.com/*", "https://*.magnific.ai/*", "https://*.freepik.com/*"],
-      "js": ["main-world.js"],
+      "matches": [
+        "https://*.higgsfield.ai/*",
+        "https://*.magnific.com/*",
+        "https://*.magnific.ai/*",
+        "https://*.freepik.com/*"
+      ],
+      "js": [
+        "main-world.js"
+      ],
       "run_at": "document_start",
-      "world": "MAIN"
+      "world": "MAIN",
+      "all_frames": true,
+      "match_origin_as_fallback": true
     },
     {
-      "matches": ["https://*.higgsfield.ai/*", "https://*.magnific.com/*", "https://*.magnific.ai/*", "https://*.freepik.com/*"],
-      "js": ["relay.js"],
-      "run_at": "document_start"
+      "matches": [
+        "https://*.higgsfield.ai/*",
+        "https://*.magnific.com/*",
+        "https://*.magnific.ai/*",
+        "https://*.freepik.com/*"
+      ],
+      "js": [
+        "relay.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_origin_as_fallback": true
     }
   ]
 }

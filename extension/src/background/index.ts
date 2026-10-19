@@ -75,6 +75,8 @@ async function emit(events: FaibleEvent[]): Promise<void> {
 }
 
 async function onCapture(record: CaptureRecord, signedUrls: Record<string, string>): Promise<void> {
+  const session = await getSession();
+  if (!session) return;
   void mirrorToDiscovery(record);
   if (record.transport === "blob") {
     await recordBlob(record);
@@ -92,7 +94,6 @@ async function onCapture(record: CaptureRecord, signedUrls: Record<string, strin
   if (bodyFileSha(record.request_body) && !uploads && (record.status ?? 0) < 400) captures = null;
   if (captures !== null && captures.length === 0) return;
 
-  const session = await getSession();
   const result = await withPipeline((state) =>
     plan(record, captures, state, {
       activeShotId: session?.activeShot?.id ?? null,
@@ -100,8 +101,8 @@ async function onCapture(record: CaptureRecord, signedUrls: Record<string, strin
       newId: () => crypto.randomUUID(),
     }),
   );
-  await emit(result.events);
-  for (const job of result.hashJobs) void hashOutput(job.output, job.method, log);
+  await emit(result.events.map((event) => ({ ...event, owner_user_id: session.user.id })));
+  for (const job of result.hashJobs) void hashOutput({ ...job.output, owner_user_id: session.user.id }, job.method, log);
 }
 
 // ---------------------------------------------------------------- downloads
@@ -122,6 +123,7 @@ function serviceForDownload(item: chrome.downloads.DownloadItem): string {
 chrome.downloads.onChanged.addListener((delta) => {
   if (delta.state?.current !== "complete") return;
   void (async () => {
+    if (!await getSession()) return;
     const [item] = await chrome.downloads.search({ id: delta.id });
     if (!item || item.byExtensionId === chrome.runtime.id) return;
     const service = serviceForDownload(item);
@@ -234,14 +236,34 @@ async function state(): Promise<Record<string, unknown>> {
   };
 }
 
+let loginTabId: number | undefined;
+
 async function handle(msg: Msg): Promise<unknown> {
   switch (msg.type) {
     case "state":
       return state();
-    case "login":
-      await login(msg.email ?? "", msg.password ?? "");
+    case "openLogin": {
+      if (loginTabId !== undefined) {
+        try {
+          await chrome.tabs.update(loginTabId, { active: true });
+          return null;
+        } catch { loginTabId = undefined; }
+      }
+      const tab = await chrome.tabs.create({ url: chrome.runtime.getURL("login.html") });
+      loginTabId = tab.id;
+      return null;
+    }
+    case "login": {
+      const previous = await getSession();
+      const next = await login(msg.email ?? "", msg.password ?? "");
+      if (previous?.user.id !== next.user.id) {
+        await clearAssetState();
+        await chrome.storage.local.set({ [PIPELINE_KEY]: emptyState(), [ACTIVITY_KEY]: [] });
+      }
+      loginTabId = undefined;
       scheduleFlush(100);
       return state();
+    }
     case "logout":
       await logout();
       return state();
@@ -286,7 +308,11 @@ async function handle(msg: Msg): Promise<unknown> {
   }
 }
 
-chrome.runtime.onMessage.addListener((msg: Msg, _sender, reply) => {
+chrome.runtime.onMessage.addListener((msg: Msg, sender, reply) => {
+  if (["login", "logout"].includes(msg.type) && !sender.url?.startsWith(chrome.runtime.getURL(""))) {
+    reply({ ok: false, error: "Use the Faible login page" });
+    return false;
+  }
   if (msg.type === "capture" && msg.record) {
     // Signed output URLs stay inside the extension: detach them before anything is stored.
     const { signed_urls: signed = {}, ...record } = msg.record;

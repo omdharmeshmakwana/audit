@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Production dashboard{% endblock %}
+{% block main %}
+<h1>{{ 'Studio admin dashboard' if user.role in ['admin', 'director'] else 'My production dashboard' }}</h1>
+<p class="sub">Artist activity, current shots, models and reported credits. Updates every two seconds.</p>
+<label>Employee <select id="artist"><option value="">All employees</option></select></label>
+<p id="sync" role="status">Connecting…</p>
+<div id="overview" class="artist-overview"></div>
+<h2>Generation history</h2>
+<p class="muted">Includes queued, running, completed, failed and cancelled requests. Credit totals include reported costs; unknown costs are listed separately.</p>
+<div class="history-controls"><button id="previous" disabled>Previous</button><span id="page-status"></span><button id="next" disabled>Next</button></div>
+<div id="feed"></div>
+<script src="/static/dashboard.js" defer></script>
+{% endblock %}

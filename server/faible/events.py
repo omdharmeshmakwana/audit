@@ -42,6 +42,11 @@ class UserRegistered(Payload):
     role: Literal["director", "artist", "admin"] = "artist"
 
 
+class UserRoleChanged(Payload):
+    user_id: uuid.UUID
+    role: Literal["director", "artist", "admin"]
+
+
 class UserLoggedIn(Payload):
     user_id: uuid.UUID
     client: Literal["web", "extension", "cli"]
@@ -280,6 +285,7 @@ class AdapterUnknownPayload(Payload):
 
 EVENT_TYPES: dict[str, type[Payload]] = {
     "user.registered": UserRegistered,
+    "user.role_changed": UserRoleChanged,
     "user.logged_in": UserLoggedIn,
     "project.created": ProjectCreated,
     "sequence.created": SequenceCreated,

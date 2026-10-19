@@ -39,14 +39,15 @@ async function refreshAccess(session: Session): Promise<Session | null> {
   if (!res.ok) return null;
   const body = (await res.json()) as { access_token: string };
   const next = { ...session, access: body.access_token };
+  if ((await getSession())?.user.id !== session.user.id) return null;
   await saveSession(next);
   return next;
 }
 
 /** Authenticated request to the Faible API; refreshes the access token once on 401. */
-export async function api(path: string, init: RequestInit = {}): Promise<Response> {
+export async function api(path: string, init: RequestInit = {}, expectedUserId?: string): Promise<Response> {
   let session = await getSession();
-  if (!session) throw new NotLoggedIn();
+  if (!session || (expectedUserId && session.user.id !== expectedUserId)) throw new NotLoggedIn();
   const call = (s: Session) =>
     fetch(`${SERVER_URL}/api/v1${path}`, {
       ...init,
@@ -54,9 +55,10 @@ export async function api(path: string, init: RequestInit = {}): Promise<Respons
     });
   let res = await call(session);
   if (res.status === 401) {
+    const refreshingUserId = session.user.id;
     session = await refreshAccess(session);
     if (!session) {
-      await saveSession(null);
+      if ((await getSession())?.user.id === refreshingUserId) await saveSession(null);
       throw new NotLoggedIn();
     }
     res = await call(session);
@@ -90,8 +92,10 @@ export async function login(email: string, password: string): Promise<Session> {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ email, password, client: "extension" }),
   });
-  if (res.status === 401) throw new Error("Wrong email or password");
-  if (!res.ok) throw new Error(`Login failed: HTTP ${res.status}`);
+  if (!res.ok) {
+    const body = await res.json() as { detail?: string };
+    throw new Error(body.detail ?? "Login failed");
+  }
   const tokens = (await res.json()) as { access_token: string; refresh_token: string };
   const partial: Session = {
     access: tokens.access_token,

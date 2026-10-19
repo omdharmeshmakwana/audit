@@ -10,7 +10,7 @@ type Send = <T>(msg: Record<string, unknown>) => Promise<T>;
 
 interface State {
   loggedIn: boolean;
-  user: { display_name: string } | null;
+  user: { display_name: string; email: string } | null;
   activeShot: { id: string; code: string } | null;
 }
 interface Project {
@@ -69,6 +69,8 @@ input[type=search], select { width: 100%; padding: 6px 8px; border-radius: 6px; 
 .row { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
 button.act { background: #2f5bd3; color: #fff; border: 0; border-radius: 6px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
 button.act:disabled { opacity: .4; cursor: default; }
+.who { margin-bottom: 6px; line-height: 1.5; }
+button.link { background: none; border: 0; padding: 0; margin-left: 6px; color: #8fb0ff; font-size: 11px; cursor: pointer; text-decoration: underline; }
 .banner { background: #3b1d1d; color: #fecaca; border-radius: 8px; padding: 8px; margin-bottom: 10px; }
 `;
 
@@ -93,9 +95,14 @@ export function mountPanel(send: Send, isInvalidated: () => boolean): void {
   const badge = el("span", { className: "badge hidden" });
   const pill = el("div", { className: "pill", title: "Faible" }, dot, pillText, badge);
   const panel = el("div", { className: "panel hidden" });
-  root.append(pill, panel);
+  const gate = el("div");
+  gate.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:2147483646;display:none;pointer-events:auto";
+  root.append(gate, pill, panel);
 
-  let open = false;
+  let open = true;
+  let shotConfirmed = false;
+  let currentEmail = "";
+  let loginRequested = false;
   let state: State | null = null;
   let projects: Project[] = [];
   let tree: Tree | null = null;
@@ -106,7 +113,7 @@ export function mountPanel(send: Send, isInvalidated: () => boolean): void {
   let error = "";
 
   pill.addEventListener("click", () => {
-    open = !open;
+    open = !open || !shotConfirmed;
     panel.classList.toggle("hidden", !open);
     void refresh(true);
   });
@@ -120,6 +127,19 @@ export function mountPanel(send: Send, isInvalidated: () => boolean): void {
     if (isInvalidated()) return render();
     try {
       state = await send<State>({ type: "state" });
+      if (currentEmail !== (state.user?.email ?? "")) {
+        currentEmail = state.user?.email ?? "";
+        shotConfirmed = false;
+        projects = [];
+        projectId = null;
+        captures = null;
+      }
+      if (!state.loggedIn || !state.activeShot) shotConfirmed = false;
+      if (!state.loggedIn && !loginRequested) {
+        loginRequested = true;
+        await send({ type: "openLogin" });
+      }
+      if (state.loggedIn) loginRequested = false;
       if (state.loggedIn) {
         if (full || projects.length === 0) {
           projects = await send<Project[]>({ type: "projects" });
@@ -138,6 +158,8 @@ export function mountPanel(send: Send, isInvalidated: () => boolean): void {
   async function choose(shot: { id: string; code: string } | null): Promise<void> {
     try {
       state = await send<State>({ type: "setActiveShot", shot });
+      shotConfirmed = !!shot;
+      if (shot) open = false;
     } catch (err) {
       error = err instanceof Error ? err.message : String(err);
     }
@@ -176,6 +198,11 @@ export function mountPanel(send: Send, isInvalidated: () => boolean): void {
 
   function render(): void {
     renderPill();
+    const needsGate = !shotConfirmed || !state?.loggedIn;
+    gate.style.display = needsGate ? "block" : "none";
+    if (document.body) document.body.inert = needsGate;
+    if (needsGate) open = true;
+    panel.classList.toggle("hidden", !open);
     if (!open) return;
     const parts: Node[] = [];
     if (isInvalidated()) {
@@ -188,14 +215,27 @@ export function mountPanel(send: Send, isInvalidated: () => boolean): void {
     if (error) parts.push(el("div", { className: "banner", textContent: error }));
     if (!state?.loggedIn) {
       parts.push(
-        el("section", {}, el("h3", { textContent: "Not logged in" }), el("div", { textContent: "Log in from the Faible button in the browser toolbar. (Not here: this page could see what you type.) Nothing is sent to Faible until you do." })),
+        el("section", {}, el("h3", { textContent: "Not logged in" }), el("div", { textContent: "Sign in with your company email to start tracking. This browser will remember your login for 30 days." })),
       );
+      const signIn = el("button", { className: "act", textContent: "Sign in with email and password" });
+      signIn.addEventListener("click", () => void send({ type: "openLogin" }).catch((err: Error) => { error = err.message; render(); }));
+      parts.push(signIn);
       panel.replaceChildren(...parts);
       return;
     }
+    // Who the captures are recorded under. The studio shares one Higgsfield login, so this
+    // is the only place a person can see they are about to work as someone else.
+    const who = el("div", { className: "who" }, el("span", { textContent: "Recording as " }), el("strong", { textContent: state.user?.email ?? "" }));
+    const switchBtn = el("button", { className: "link", textContent: "Not you? Switch account" });
+    switchBtn.addEventListener("click", () => void send({ type: "openLogin" }).catch((err: Error) => { error = err.message; render(); }));
+    who.append(switchBtn);
+    parts.push(who);
+    if (!shotConfirmed) parts.push(el("div", { className: "banner", textContent: "Select the scene you are working on before using Higgsfield." }));
+    const dashboard = el("a", { href: "http://localhost:8000/dashboard", target: "_blank", rel: "noopener", textContent: "Open live dashboard" });
+    parts.push(dashboard);
 
     // Active shot
-    const shotSec = el("section", {}, el("h3", { textContent: "Active shot" }));
+    const shotSec = el("section", {}, el("h3", { textContent: "Active scene" }));
     shotSec.append(
       el("div", {
         className: state.activeShot ? "shot" : "shot warn",
@@ -211,7 +251,7 @@ export function mountPanel(send: Send, isInvalidated: () => boolean): void {
       });
       shotSec.append(sel);
     }
-    const search = el("input", { type: "search", placeholder: "Search shots…", value: filter });
+    const search = el("input", { type: "search", placeholder: "Search scenes…", value: filter });
     search.addEventListener("input", () => {
       filter = search.value;
       renderShots();
@@ -228,12 +268,12 @@ export function mountPanel(send: Send, isInvalidated: () => boolean): void {
           buttons.push(b);
         }
       }
-      shotList.replaceChildren(...(buttons.length ? buttons : [el("div", { className: "muted", textContent: " No shots match." })]));
+      shotList.replaceChildren(...(buttons.length ? buttons : [el("div", { className: "muted", textContent: " No scenes match." })]));
     };
     renderShots();
     shotSec.append(search, shotList);
     if (state.activeShot) {
-      const clear = el("button", { className: "act", textContent: "Clear active shot" });
+      const clear = el("button", { className: "act", textContent: "Clear active scene" });
       clear.style.marginTop = "6px";
       clear.style.background = "#3a3e47";
       clear.addEventListener("click", () => void choose(null));
@@ -266,7 +306,7 @@ export function mountPanel(send: Send, isInvalidated: () => boolean): void {
     if (!captures?.recent.length) capSec.append(el("div", { className: "muted", textContent: "Nothing captured yet." }));
     const assignBtn = el("button", {
       className: "act",
-      textContent: state.activeShot ? `Assign ${selected.size || ""} to ${state.activeShot.code}` : "Pick an active shot to assign",
+      textContent: state.activeShot ? `Assign ${selected.size || ""} to ${state.activeShot.code}` : "Pick an active scene to assign",
       disabled: !state.activeShot || selected.size === 0,
     });
     assignBtn.addEventListener("click", () => void assign());

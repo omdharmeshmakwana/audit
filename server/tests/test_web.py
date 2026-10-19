@@ -141,3 +141,33 @@ def test_imported_reencode_links_to_its_source_as_inferred(
     assert "Same picture, different file" in html  # the chain crosses the inferred edge
     assert "enhance-magnific-creative" in html  # …back to the generation that made the original
     assert str(version.asset_id) in html
+
+
+def test_admin_creates_project_and_scene(client: TestClient, session: Session) -> None:
+    from faible.auth import register_user
+    from faible.models import Project, Shot
+
+    register_user(
+        session,
+        email="boss@faiblemedia.com",
+        password="changeme",
+        display_name="Boss",
+        role="admin",
+    )
+    session.commit()
+    client.post("/login", data={"email": "boss@faiblemedia.com", "password": "changeme"})
+    r = client.post("/projects", data={"code": "ad 01", "name": "Ad"}, follow_redirects=False)
+    assert r.status_code == 303, r.text
+    project = session.scalar(select(Project).where(Project.code == "AD_01"))
+    assert project is not None
+    r = client.post(
+        f"/projects/{project.id}/scenes",
+        data={"code": "sc010", "sequence": "Main", "description": "Opening"},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303, r.text
+    assert session.scalar(select(Shot).where(Shot.code == "SC010")).project_id == project.id
+    assert client.post("/projects", data={"code": "AD_01"}).status_code == 409
+    client.get("/logout")
+    client.post("/login", data={"email": "artist1@studio", "password": "changeme"})
+    assert client.post("/projects", data={"code": "NOPE"}).status_code == 403

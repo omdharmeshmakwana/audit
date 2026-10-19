@@ -3,13 +3,13 @@
 {% block main %}
 <h1>{{ tree.project.name }} <span class="muted">{{ tree.project.code }}</span></h1>
 <div class="sub">
-  {{ tree.sequences|map(attribute='shots')|map('length')|sum }} shots ·
+  {{ tree.sequences|map(attribute='shots')|map('length')|sum }} scenes ·
   characters: {% for e in tree.entities %}{{ e.name }}{% if not loop.last %}, {% endif %}{% endfor %}
 </div>
 {% for seq in tree.sequences %}
 <h2>{{ seq.name }}</h2>
 <table>
-  <tr><th>Shot</th><th>Description</th><th>Status</th><th class="num">Versions</th><th class="num">Generations</th><th class="num">Credits spent</th><th>Budget</th></tr>
+  <tr><th>Scene</th><th>Description</th><th>Status</th><th class="num">Versions</th><th class="num">Generations</th><th class="num">Credits spent</th><th>Budget</th></tr>
   {% for s in seq.shots %}
   {% set st = stats.get(s.id, {}) %}
   {% set budget = budgets.get(s.id) %}
@@ -26,5 +26,15 @@
   {% endfor %}
 </table>
 {% endfor %}
+{% if user.role in ['admin', 'director'] %}
+<h2>New scene</h2>
+<form method="post" action="/projects/{{ tree.project.id }}/scenes" class="inline">
+  <label>Sequence <input name="sequence" value="Main" required></label>
+  <label>Scene code <input name="code" required placeholder="SC010" pattern="[A-Za-z0-9_ -]+"></label>
+  <label>Description <input name="description" placeholder="What happens in this scene"></label>
+  <button>Add scene</button>
+</form>
+<p class="muted">Employees pick one of these scenes in the Faible panel when they open Higgsfield.</p>
+{% endif %}
 <p class="muted">Credits mix service units (Higgsfield and Magnific credits are not the same currency); per-service totals arrive with the credits report in Phase 4.</p>
 {% endblock %}

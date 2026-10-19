@@ -9,6 +9,11 @@ faible events-doc      regenerate docs/EVENTS.md from faible/events.py
 faible show-shot CODE  print a shot's generations, prompts, credits and asset links
 faible fingerprint     compute pHash for stored assets that lack one (appends events)
 faible fetch-missing   fetch + verify bytes of assets known only by a public URL
+faible create-account EMAIL [--role admin]   one Faible account per person (never shared)
+faible disable-account EMAIL                 refuse login and every existing token
+faible enable-account EMAIL                  allow a disabled account to log in again
+faible set-password EMAIL [--password PW]    reset an account's password (prompts if omitted)
+faible disable-demo-accounts                 disable the seeded *@studio demo accounts
 """
 
 import argparse
@@ -134,24 +139,210 @@ def _backfill(kind: str) -> int:
     return 0
 
 
+def _setup_test_login() -> int:
+    from faible.auth import hash_password, register_user
+    from faible.models import UserCredential
+
+    with get_sessionmaker()() as session, session.begin():
+        user_id = register_user(
+            session,
+            email="om@faiblemedia.com",
+            password="changeme",  # noqa: S106 - requested test account
+            display_name="Om",
+        )
+        credential = session.get_one(UserCredential, user_id)
+        credential.password_hash = hash_password("changeme")
+    print("Test login ready: om@faiblemedia.com")
+    return 0
+
+
+def _set_password(email: str, password: str | None) -> int:
+    import getpass
+
+    from sqlalchemy import select
+
+    from faible.auth import hash_password
+    from faible.models import UserCredential
+
+    password = password or getpass.getpass("New password: ")
+    if len(password) < 8:
+        print("Password must contain at least 8 characters")
+        return 1
+    with get_sessionmaker()() as session, session.begin():
+        cred = session.scalar(
+            select(UserCredential).where(UserCredential.email == email.strip().lower())
+        )
+        if cred is None:
+            print("Account not found")
+            return 1
+        cred.password_hash = hash_password(password)
+    print(f"Password updated: {email.strip().lower()}")
+    return 0
+
+
+def _enable_account(email: str) -> int:
+    from faible.auth import enable_account
+
+    with get_sessionmaker()() as session, session.begin():
+        if not enable_account(session, email):
+            print("Account not found")
+            return 1
+    print(f"Enabled: {email.strip().lower()}")
+    return 0
+
+
+def _disable_account(email: str) -> int:
+    from faible.auth import disable_account
+
+    with get_sessionmaker()() as session, session.begin():
+        if not disable_account(session, email):
+            print("Account not found")
+            return 1
+    print(f"Disabled: {email.strip().lower()} (logins and existing tokens are refused)")
+    return 0
+
+
+def _disable_demo_accounts() -> int:
+    """The seed's director@studio / artist1@studio / artist2@studio are demo logins with a
+    public password. On a real studio install they must not absorb anyone's captures."""
+    from sqlalchemy import select
+
+    from faible.auth import disable_account
+    from faible.models import UserCredential
+
+    with get_sessionmaker()() as session, session.begin():
+        emails = list(
+            session.scalars(
+                select(UserCredential.email).where(
+                    UserCredential.email.like("%@studio"), UserCredential.disabled_at.is_(None)
+                )
+            )
+        )
+        for email in emails:
+            disable_account(session, email)
+    print(f"Disabled {len(emails)} demo account(s): {', '.join(emails) or 'none left'}")
+    return 0
+
+
 COMMANDS: dict[str, Callable[[], int]] = {
     "verify-log": _verify_log,
     "rebuild": _rebuild,
     "checksum": _checksum,
     "seed": _seed,
+    "setup-test-login": _setup_test_login,
     "events-doc": _events_doc,
     "fingerprint": partial(_backfill, "fingerprint"),
     "fetch-missing": partial(_backfill, "fetch-missing"),
+    "disable-demo-accounts": _disable_demo_accounts,
 }
+
+
+def _create_account(email: str, role: str, password: str | None) -> int:
+    import getpass
+
+    from sqlalchemy import select
+
+    from faible.auth import register_user
+    from faible.models import User
+
+    email = email.strip().lower()
+    if email.count("@") != 1 or email.split("@")[1] != "faiblemedia.com":
+        print("Use a company email at faiblemedia.com")
+        return 1
+    password = password or getpass.getpass("New account password: ")
+    if len(password) < 8:
+        print("Password must contain at least 8 characters")
+        return 1
+    with get_sessionmaker()() as session, session.begin():
+        existing = session.scalar(select(User).where(User.email == email))
+        if existing:
+            print(f"Account already exists with role {existing.role}; no changes made")
+            return 0 if existing.role == role else 1
+        register_user(
+            session, email=email, password=password, display_name=email.split("@")[0], role=role
+        )
+    print(f"Created {role} account: {email}")
+    return 0
+
+
+def _set_account_role(email: str, role: str) -> int:
+    import uuid
+    from datetime import UTC, datetime
+
+    from sqlalchemy import select
+
+    from faible.log import EventIn, append_events
+    from faible.models import User
+
+    with get_sessionmaker()() as session, session.begin():
+        user = session.scalar(select(User).where(User.email == email.strip().lower()))
+        if user is None:
+            print("Account not found")
+            return 1
+        if user.role == role:
+            return 0
+        result = append_events(
+            session,
+            [
+                EventIn(
+                    event_id=uuid.uuid4(),
+                    type="user.role_changed",
+                    occurred_at=datetime.now(UTC),
+                    evidence="asserted",
+                    payload={"user_id": str(user.id), "role": role},
+                )
+            ],
+            source="script",
+        )[0]
+        if result.status != "accepted":
+            print(result.reason)
+            return 1
+    print(f"Account role set to {role}: {email}")
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="faible", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("command", choices=sorted([*COMMANDS, "show-shot"]))
+    parser.add_argument(
+        "command",
+        choices=sorted(
+            [
+                *COMMANDS,
+                "show-shot",
+                "create-account",
+                "set-account-role",
+                "disable-account",
+                "enable-account",
+                "set-password",
+            ]
+        ),
+    )
     parser.add_argument("arg", nargs="?")
+    parser.add_argument("--role", choices=["artist", "admin"], default="artist")
+    parser.add_argument("--password", help="Account password; omitted to prompt securely")
     args = parser.parse_args(argv)
+    if args.command == "set-account-role":
+        if not args.arg:
+            parser.error("set-account-role needs an email")
+        return _set_account_role(args.arg, args.role)
+    if args.command == "set-password":
+        if not args.arg:
+            parser.error("set-password needs an email")
+        return _set_password(args.arg, args.password)
+    if args.command == "enable-account":
+        if not args.arg:
+            parser.error("enable-account needs an email")
+        return _enable_account(args.arg)
+    if args.command == "disable-account":
+        if not args.arg:
+            parser.error("disable-account needs an email")
+        return _disable_account(args.arg)
+    if args.command == "create-account":
+        if not args.arg:
+            parser.error("create-account needs a company email")
+        return _create_account(args.arg, args.role, args.password)
     if args.command == "show-shot":
         if not args.arg:
             parser.error("show-shot needs a shot code, e.g. SQ01_SH010")

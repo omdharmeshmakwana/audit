@@ -44,7 +44,7 @@ function render(s: State): void {
   $("who").textContent = s.user ? s.user.display_name : "";
   if (!s.loggedIn) return;
   const shot = $("shot");
-  shot.textContent = s.activeShot ? s.activeShot.code : "No active shot — captures will be unassigned";
+  shot.textContent = s.activeShot ? s.activeShot.code : "No active scene — captures will be unassigned";
   shot.className = s.activeShot ? "shot" : "shot warn";
   $("pending").textContent = String(s.queue.pending);
   $("sent").textContent = String(s.queue.status.sent);
@@ -56,8 +56,21 @@ function render(s: State): void {
   $<HTMLInputElement>("discovery").checked = s.discovery;
 }
 
+function showError(err: unknown): void {
+  const message = err instanceof Error ? err.message : String(err);
+  // An "unknown message" reply means Chrome is still running an older Faible build.
+  $("popup-error").textContent = /unknown message/.test(message)
+    ? "Faible was updated. Reload it in chrome://extensions, then refresh your Higgsfield tabs."
+    : message;
+}
+
 async function refresh(): Promise<void> {
-  render(await send<State>({ type: "state" }));
+  try {
+    render(await send<State>({ type: "state" }));
+    $("popup-error").textContent = "";
+  } catch (err) {
+    showError(err);
+  }
 }
 
 $("login-form").addEventListener("submit", (e) => {
@@ -67,10 +80,10 @@ $("login-form").addEventListener("submit", (e) => {
     .then(render)
     .catch((err: Error) => ($("login-error").textContent = err.message));
 });
-$("logout").addEventListener("click", () => void send<State>({ type: "logout" }).then(render));
-$("flush").addEventListener("click", () => void send<State>({ type: "flush" }).then(render));
+$("logout").addEventListener("click", () => void send<State>({ type: "logout" }).then(render).catch(showError));
+$("flush").addEventListener("click", () => void send<State>({ type: "flush" }).then(render).catch(showError));
 $("discovery").addEventListener("change", (e) =>
-  void send<State>({ type: "setDiscovery", enabled: (e.target as HTMLInputElement).checked }).then(render),
+  void send<State>({ type: "setDiscovery", enabled: (e.target as HTMLInputElement).checked }).then(render).catch(showError),
 );
 
 void refresh();

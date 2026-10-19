@@ -24,7 +24,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from faible.api import SESSION_COOKIE
-from faible.auth import AuthError, authenticate, decode_token, issue_token
+from faible.auth import AuthError, authenticate, decode_token, is_disabled, issue_token
 from faible.chain import asset_chain, union_chain
 from faible.db import get_session
 from faible.events import Evidence
@@ -35,6 +35,7 @@ from faible.models import (
     ActivityOutput,
     Asset,
     Project,
+    Sequence,
     Shot,
     ShotVersion,
     User,
@@ -57,7 +58,7 @@ def web_user(session: DbSession, faible_session: Annotated[str | None, Cookie()]
         user = session.get(User, decode_token(faible_session, "web"))
     except AuthError as exc:
         raise LoginRequired from exc
-    if user is None:
+    if user is None or is_disabled(session, user.id):
         raise LoginRequired
     return user
 
@@ -118,6 +119,11 @@ def unassigned_count(session: Session) -> int:
 # ---------------------------------------------------------------- auth
 
 
+@router.get("/dashboard")
+def dashboard_page(request: Request, user: WebUser) -> HTMLResponse:
+    return page(request, "dashboard.html", user)
+
+
 @router.get("/login")
 def login_form(request: Request, error: str | None = None) -> HTMLResponse:
     return page(request, "login.html", None, error=error)
@@ -136,13 +142,13 @@ def login(
     except AuthError:
         return RedirectResponse("/login?error=Wrong+email+or+password", status.HTTP_303_SEE_OTHER)
     session.commit()
-    res = RedirectResponse("/", status.HTTP_303_SEE_OTHER)
+    res = RedirectResponse("/dashboard", status.HTTP_303_SEE_OTHER)
     res.set_cookie(
         SESSION_COOKIE,
         issue_token(user_id, "web"),
         httponly=True,
         samesite="lax",
-        max_age=12 * 3600,
+        max_age=30 * 86400,
     )
     return res
 
@@ -160,11 +166,106 @@ def logout() -> Response:
 @router.get("/")
 def home(request: Request, session: DbSession, user: WebUser) -> Response:
     projects = list(session.scalars(select(Project).order_by(Project.code)))
-    if len(projects) == 1:
+    if len(projects) == 1 and user.role not in ("admin", "director"):
         return RedirectResponse(f"/projects/{projects[0].id}", status.HTTP_303_SEE_OTHER)
     return page(
         request, "projects.html", user, projects=projects, unassigned=unassigned_count(session)
     )
+
+
+def require_manager(user: User) -> None:
+    if user.role not in ("admin", "director"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "admin only")
+
+
+@router.post("/projects")
+def create_project(
+    request: Request,
+    session: DbSession,
+    user: WebUser,
+    code: Annotated[str, Form()],
+    name: Annotated[str, Form()] = "",
+) -> Response:
+    """Admin creates a project; employees then pick its scenes in the extension."""
+    same_origin(request)
+    require_manager(user)
+    code = code.strip().upper().replace(" ", "_")
+    if not code:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "project code required")
+    if session.scalar(select(Project).where(Project.code == code)) is not None:
+        raise HTTPException(status.HTTP_409_CONFLICT, f"project {code} already exists")
+    project_id = uuid.uuid4()
+    emit(
+        session,
+        user,
+        "project.created",
+        {"project_id": str(project_id), "name": name.strip() or code, "code": code},
+        "originated",
+    )
+    session.commit()
+    return RedirectResponse(f"/projects/{project_id}", status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/projects/{project_id}/scenes")
+def create_scene(
+    project_id: uuid.UUID,
+    request: Request,
+    session: DbSession,
+    user: WebUser,
+    code: Annotated[str, Form()],
+    sequence: Annotated[str, Form()] = "Main",
+    description: Annotated[str, Form()] = "",
+) -> Response:
+    """Admin adds a scene (a shot inside a sequence) that employees can select."""
+    same_origin(request)
+    require_manager(user)
+    if session.get(Project, project_id) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND)
+    code = code.strip().upper().replace(" ", "_")
+    sequence = sequence.strip() or "Main"
+    if not code:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "scene code required")
+    if session.scalar(select(Shot).where(Shot.project_id == project_id, Shot.code == code)):
+        raise HTTPException(status.HTTP_409_CONFLICT, f"scene {code} already exists")
+    seq = session.scalar(
+        select(Sequence).where(Sequence.project_id == project_id, Sequence.name == sequence)
+    )
+    if seq is None:
+        sequence_id = uuid.uuid4()
+        order = (
+            session.scalar(
+                select(func.count()).select_from(Sequence).where(Sequence.project_id == project_id)
+            )
+            or 0
+        ) + 1
+        emit(
+            session,
+            user,
+            "sequence.created",
+            {
+                "sequence_id": str(sequence_id),
+                "project_id": str(project_id),
+                "name": sequence,
+                "order": order,
+            },
+            "originated",
+        )
+    else:
+        sequence_id = seq.id
+    emit(
+        session,
+        user,
+        "shot.created",
+        {
+            "shot_id": str(uuid.uuid4()),
+            "sequence_id": str(sequence_id),
+            "code": code,
+            "description": description.strip(),
+        },
+        "originated",
+    )
+    session.commit()
+    return RedirectResponse(f"/projects/{project_id}", status.HTTP_303_SEE_OTHER)
 
 
 @router.get("/projects/{project_id}")

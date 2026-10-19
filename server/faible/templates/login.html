@@ -3,10 +3,10 @@
 {% block main %}
 <div class="login panel">
   <h1>Faible</h1>
-  <p class="sub">Provenance and production tracking.</p>
+  <p class="sub">Sign in with your company email and password. This browser stays signed in for 30 days.</p>
   {% if error %}<div class="error">{{ error }}</div>{% endif %}
   <form method="post" action="/login">
-    <label>Email <input type="email" name="email" autocomplete="username" required autofocus /></label>
+    <label>Company email <input type="email" name="email" value="om@faiblemedia.com" autocomplete="username" required autofocus /></label>
     <label>Password <input type="password" name="password" autocomplete="current-password" required /></label>
     <button class="primary" type="submit">Log in</button>
   </form>

@@ -421,6 +421,12 @@ def user_registered(session: Session, e: Event) -> None:
     session.flush()
 
 
+def user_role_changed(session: Session, e: Event) -> None:
+    user = session.get_one(User, _uuid(e.payload["user_id"]))
+    user.role = e.payload["role"]
+    session.flush()
+
+
 def user_logged_in(session: Session, e: Event) -> None:
     user = session.get(User, _uuid(e.payload["user_id"]))
     if user is not None:
@@ -601,6 +607,7 @@ def _noop(session: Session, e: Event) -> None:
 
 PROJECTORS: dict[str, Projector] = {
     "user.registered": user_registered,
+    "user.role_changed": user_role_changed,
     "user.logged_in": user_logged_in,
     "project.created": project_created,
     "sequence.created": sequence_created,

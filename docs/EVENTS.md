@@ -30,6 +30,22 @@ A Faible account was created.
 }
 ```
 
+## `user.role_changed`
+
+An administrator changed an account role; replay preserves the new access level.
+
+| field | type | |
+|---|---|---|
+| `user_id` | `UUID` | required |
+| `role` | `Literal` | required |
+
+```json
+{
+  "user_id": "5b0c2f1e-8a0d-4c7b-9a51-3f2d7e6c1a90",
+  "role": "artist"
+}
+```
+
 ## `user.logged_in`
 
 A user logged in to the web UI, the extension or the CLI.
@@ -97,7 +113,7 @@ A shot within a sequence.
 | `code` | `str` | required |
 | `description` | `str` | optional |
 | `status` | `str` | optional |
-| `credit_budget` | `Union` | optional |
+| `credit_budget` | `decimal.Decimal | None` | optional |
 
 ```json
 {
@@ -137,7 +153,7 @@ A user set (or cleared, `null`) their active shot in the extension.
 | field | type | |
 |---|---|---|
 | `user_id` | `UUID` | required |
-| `shot_id` | `Union` | required |
+| `shot_id` | `uuid.UUID | None` | required |
 
 ```json
 {
@@ -211,19 +227,19 @@ The extension saw a generation request (and its immediate response) go out. Inpu
 | `activity_id` | `UUID` | required |
 | `service` | `str` | required |
 | `kind` | `Literal` | optional |
-| `model_id` | `Union` | optional |
-| `model_version` | `Union` | optional |
-| `service_job_id` | `Union` | optional |
+| `model_id` | `str | None` | optional |
+| `model_version` | `str | None` | optional |
+| `service_job_id` | `str | None` | optional |
 | `status` | `Literal` | optional |
-| `prompt` | `Union` | optional |
-| `negative_prompt` | `Union` | optional |
-| `seed` | `Union` | optional |
+| `prompt` | `str | None` | optional |
+| `negative_prompt` | `str | None` | optional |
+| `seed` | `str | None` | optional |
 | `parameters` | `dict` | optional |
 | `inputs` | `list` | optional |
-| `credits_cost` | `Union` | optional |
+| `credits_cost` | `decimal.Decimal | None` | optional |
 | `credits_currency` | `str` | optional |
-| `shot_id` | `Union` | optional |
-| `service_account` | `Union` | optional |
+| `shot_id` | `uuid.UUID | None` | optional |
+| `service_account` | `faible.events.ServiceAccountRef | None` | optional |
 
 ```json
 {
@@ -265,12 +281,12 @@ A status change seen in polling or push traffic. `credits_cost`, when present, i
 
 | field | type | |
 |---|---|---|
-| `activity_id` | `Union` | optional |
-| `service` | `Union` | optional |
-| `service_job_id` | `Union` | optional |
+| `activity_id` | `uuid.UUID | None` | optional |
+| `service` | `str | None` | optional |
+| `service_job_id` | `str | None` | optional |
 | `status` | `Literal` | required |
-| `detail` | `Union` | optional |
-| `credits_cost` | `Union` | optional |
+| `detail` | `str | None` | optional |
+| `credits_cost` | `decimal.Decimal | None` | optional |
 
 ```json
 {
@@ -289,11 +305,11 @@ Outputs are available. Output bytes are usually hashed later (asset.registered);
 
 | field | type | |
 |---|---|---|
-| `activity_id` | `Union` | optional |
-| `service` | `Union` | optional |
-| `service_job_id` | `Union` | optional |
+| `activity_id` | `uuid.UUID | None` | optional |
+| `service` | `str | None` | optional |
+| `service_job_id` | `str | None` | optional |
 | `outputs` | `list` | optional |
-| `credits_cost` | `Union` | optional |
+| `credits_cost` | `decimal.Decimal | None` | optional |
 
 ```json
 {
@@ -320,13 +336,13 @@ The server knows an asset's bytes (sha256) and metadata; `stored` means a local 
 | field | type | |
 |---|---|---|
 | `sha256` | `str` | required |
-| `media_type` | `Union` | optional |
-| `width` | `Union` | optional |
-| `height` | `Union` | optional |
-| `duration_ms` | `Union` | optional |
-| `fps` | `Union` | optional |
-| `bytes` | `Union` | optional |
-| `phash` | `Union` | optional |
+| `media_type` | `str | None` | optional |
+| `width` | `int | None` | optional |
+| `height` | `int | None` | optional |
+| `duration_ms` | `int | None` | optional |
+| `fps` | `float | None` | optional |
+| `bytes` | `int | None` | optional |
+| `phash` | `str | None` | optional |
 | `stored` | `bool` | optional |
 | `locations` | `list` | optional |
 
@@ -360,8 +376,8 @@ A known asset was seen at another location (e.g. uploaded to a second service).
 | `sha256` | `str` | required |
 | `service` | `str` | required |
 | `url` | `str` | optional |
-| `service_asset_id` | `Union` | optional |
-| `is_alive` | `Union` | optional |
+| `service_asset_id` | `str | None` | optional |
+| `is_alive` | `bool | None` | optional |
 
 ```json
 {
@@ -381,12 +397,12 @@ chrome.downloads reported a completed service download. `sha256` is null when no
 |---|---|---|
 | `download_id` | `UUID` | required |
 | `filename` | `str` | required |
-| `service` | `Union` | optional |
-| `url` | `Union` | optional |
-| `bytes` | `Union` | optional |
-| `mime` | `Union` | optional |
-| `sha256` | `Union` | optional |
-| `hash_method` | `Union` | optional |
+| `service` | `str | None` | optional |
+| `url` | `str | None` | optional |
+| `bytes` | `int | None` | optional |
+| `mime` | `str | None` | optional |
+| `sha256` | `str | None` | optional |
+| `hash_method` | `Optional` | optional |
 
 ```json
 {
@@ -451,7 +467,7 @@ A human linked an asset to an activity or shot (evidence `asserted`, confidence 
 | `sha256` | `str` | required |
 | `target_type` | `Literal` | required |
 | `target_id` | `UUID` | required |
-| `reason` | `Union` | optional |
+| `reason` | `str | None` | optional |
 
 ```json
 {
@@ -517,7 +533,7 @@ The extension saw a response on a matched URL it could not parse (redacted, firs
 |---|---|---|
 | `service` | `str` | required |
 | `url` | `str` | required |
-| `method` | `Union` | optional |
+| `method` | `str | None` | optional |
 | `sample` | `str` | required |
 
 ```json

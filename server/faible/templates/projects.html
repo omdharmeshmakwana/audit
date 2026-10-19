@@ -10,4 +10,12 @@
   <tr><td colspan="3" class="muted">No projects yet.</td></tr>
   {% endfor %}
 </table>
+{% if user.role in ['admin', 'director'] %}
+<h2>New project</h2>
+<form method="post" action="/projects" class="inline">
+  <label>Code <input name="code" required placeholder="PROJ01" pattern="[A-Za-z0-9_ -]+"></label>
+  <label>Name <input name="name" placeholder="Project name"></label>
+  <button>Create project</button>
+</form>
+{% endif %}
 {% endblock %}

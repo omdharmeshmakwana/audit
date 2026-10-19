@@ -20,6 +20,10 @@ EXAMPLES: dict[str, tuple[str, dict[str, Any]]] = {
         "A Faible account was created.",
         {"user_id": U, "email": "artist1@studio", "display_name": "Artist One", "role": "artist"},
     ),
+    "user.role_changed": (
+        "An administrator changed an account role; replay preserves the new access level.",
+        {"user_id": U, "role": "artist"},
+    ),
     "user.logged_in": (
         "A user logged in to the web UI, the extension or the CLI.",
         {"user_id": U, "client": "extension"},

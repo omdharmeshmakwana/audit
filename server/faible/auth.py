@@ -20,8 +20,8 @@ from faible.models import UserCredential
 
 _hasher = PasswordHasher()
 ACCESS_TTL = timedelta(minutes=15)
-REFRESH_TTL = timedelta(days=7)
-WEB_TTL = timedelta(hours=12)  # httpOnly session cookie for the web UI
+REFRESH_TTL = timedelta(days=30)
+WEB_TTL = timedelta(days=30)  # httpOnly session cookie for the web UI
 TokenType = Literal["access", "refresh", "web"]
 _TTL = {"access": ACCESS_TTL, "refresh": REFRESH_TTL, "web": WEB_TTL}
 
@@ -101,6 +101,8 @@ def authenticate(
         _hasher.verify(cred.password_hash, password)
     except VerificationError as exc:
         raise AuthError("invalid email or password") from exc
+    if cred.disabled_at is not None:
+        raise AuthError("account disabled")
     append_events(
         session,
         [
@@ -116,6 +118,33 @@ def authenticate(
         actor_user_id=cred.user_id,
     )
     return cred.user_id
+
+
+def is_disabled(session: Session, user_id: uuid.UUID) -> bool:
+    """Disabled accounts are refused on every request, so already-issued tokens die too."""
+    cred = session.get(UserCredential, user_id)
+    return cred is not None and cred.disabled_at is not None
+
+
+def disable_account(session: Session, email: str) -> bool:
+    cred = session.scalar(
+        select(UserCredential).where(UserCredential.email == email.strip().lower())
+    )
+    if cred is None:
+        return False
+    if cred.disabled_at is None:
+        cred.disabled_at = datetime.now(UTC)
+    return True
+
+
+def enable_account(session: Session, email: str) -> bool:
+    cred = session.scalar(
+        select(UserCredential).where(UserCredential.email == email.strip().lower())
+    )
+    if cred is None:
+        return False
+    cred.disabled_at = None
+    return True
 
 
 def issue_token(user_id: uuid.UUID, typ: TokenType) -> str:

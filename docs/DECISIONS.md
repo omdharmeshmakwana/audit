@@ -182,3 +182,48 @@ Every deviation from `faible-tracking-v1-prompt.md`, dated. Newest last.
     spec's Phase 3 demo path ("re-encode a downloaded clip … upload it as a new asset").
 47. **A chain step's "at"** is the activity's start, and a match step's is the derived asset's
     first sighting; steps are ordered oldest first.
+
+## 2026-10-13 — Company OTP and dashboard
+
+48. **Company OTP pilot.** User requested remembered email-code login rather than passwords,
+    initially restricted to `om@faiblemedia.com` within `faiblemedia.com`. SMTP delivery is
+    configurable; an explicit local delivery mode writes a private test code file instead
+    of sending email. OTP challenges are private, expiring rows excluded from event replay.
+49. **Shot selection on each page visit.** The extension opens its panel and gates interaction
+    until a shot is explicitly selected. OTP entry remains on an extension-owned page, per
+    #29. Login is remembered for 30 days; shot confirmation is per page visit.
+50. **Live dashboard.** Two-second polling over captured activities, grouped by Faible email.
+    Artists see their own feed; director/admin roles can filter all artists. Existing shared
+    production pages are unchanged. Capture remains based on service request/response traffic.
+51. **Prompt warnings.** Copied the user-supplied promptFilter.js word lists as data. Red
+    warnings appear while typing and on dashboard captures; they flag only and do not block
+    model requests. Normalize both prompt and vocabulary (fixing hyphenated-term matching).
+52. **Queue attribution.** Pending events carry private original-user metadata stripped before
+    ingest; events cannot be flushed under another account. Legacy unowned entries are held.
+
+## 2026-10-13 — Password login and prompt warning correction
+
+53. **OTP removed by user request.** Login now uses company email/password with the explicit
+    pilot account om@faiblemedia.com / changeme. setup-test-login creates or resets that
+    account without changing passwords at startup. Previously applied OTP migration/table
+    remain in migration history; no OTP routes or delivery code are active.
+54. **Broader prompt editor detection.** Previous logic skipped plain text inputs without
+    prompt hints, empty contenteditable attributes and plaintext-only editors. The warning
+    now checks these, dynamic editors, open shadow roots and supported service frames,
+    independently of model. It adds both a red field outline and a prominent red banner.
+
+## 2026-10-13 — Studio admin reporting
+
+55. **Artist summaries and full history.** Admin/director dashboard covers every artist,
+    current selected shot, model/shot usage, full-history reported credit totals, unknown
+    costs, statuses and recent timestamps. Paginated history replaces the 200-row cap.
+56. **Automatic login prompt.** A logged-out supported service page opens the extension-owned
+    company login tab automatically. Saved 30-day sessions and per-visit shot selection stay.
+57. **Account roles remain event-sourced.** create-account creates a company artist/admin via
+    user.registered; existing accounts are preserved. Generic extension ingest cannot submit
+    account events, preventing artist-to-admin escalation through the capture endpoint.
+
+58. **Chosen admin account.** User selected rushik@faiblemedia.com. The temporary default
+    admin@faiblemedia.com is demoted through user.role_changed, an append-only role event
+    so replay cannot restore revoked privileges. Role changes are local CLI operations;
+    extension ingest cannot submit role events or another user's active-shot event.

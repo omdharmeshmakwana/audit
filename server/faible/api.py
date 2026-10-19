@@ -13,6 +13,7 @@ from fastapi import (
     Form,
     Header,
     HTTPException,
+    Query,
     UploadFile,
     status,
 )
@@ -21,7 +22,14 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from faible.auth import AuthError, authenticate, decode_token, issue_token, register_user
+from faible.auth import (
+    AuthError,
+    authenticate,
+    decode_token,
+    is_disabled,
+    issue_token,
+    register_user,
+)
 from faible.chain import asset_chain
 from faible.db import get_session
 from faible.events import Evidence
@@ -56,6 +64,8 @@ def current_user(
     user = session.get(User, user_id)
     if user is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unknown user")
+    if is_disabled(session, user.id):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "account disabled")
     return user
 
 
@@ -130,6 +140,19 @@ def refresh(body: RefreshIn, session: DbSession) -> TokensOut:
     return TokensOut(access_token=issue_token(user_id, "access"), user_id=user_id)
 
 
+@router.get("/dashboard")
+def live_dashboard(
+    session: DbSession,
+    user: CurrentUser,
+    artist_id: uuid.UUID | None = None,
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+) -> dict[str, Any]:
+    from faible.dashboard import dashboard_data
+
+    return dashboard_data(session, user, artist_id, limit=limit, offset=offset)
+
+
 @router.get("/me")
 def me(user: CurrentUser) -> MeOut:
     return MeOut(
@@ -161,6 +184,11 @@ def ingest_events(
 ) -> dict[str, list[IngestResultOut]]:
     """Batch ingest from the extension. Idempotent on event_id; each event is accepted,
     duplicate, conflict or rejected individually; accepted ones commit together."""
+    if any(
+        event.type in {"user.registered", "user.logged_in", "user.role_changed", "shot.active_set"}
+        for event in body.events
+    ):
+        raise HTTPException(403, "Account events cannot be submitted by the extension")
     results = append_events(session, body.events, source="extension", actor_user_id=user.id)
     session.commit()
     return {

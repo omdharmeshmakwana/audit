@@ -1,0 +1,7 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Faible company login</title>
+<style>body{font:16px system-ui;background:#f6f6f4;color:#16181d}main{max-width:400px;margin:12vh auto;background:white;padding:32px;border-radius:16px}label{display:block;margin:18px 0}input,button{font:inherit;padding:10px;box-sizing:border-box;width:100%}button{background:#2f5bd3;color:white;border:0;border-radius:8px;cursor:pointer}.hidden{display:none}#status{white-space:pre-wrap}</style></head>
+<body><main><h1>Faible</h1><p>Sign in with <strong>your own</strong> company email and password. Every generation is recorded under the account signed in here, not the shared Higgsfield login. We'll remember this browser for 30 days.</p>
+<p id="current" class="hidden">Currently signed in as <strong id="current-email"></strong>. Signing in below replaces that account on this browser.</p>
+<form id="login"><label>Company email<input id="email" type="email" autocomplete="username" required></label><label>Password<input id="password" type="password" autocomplete="current-password" required></label><button>Log in</button></form>
+<p id="status" role="status"></p></main><script src="login.js"></script></body></html>

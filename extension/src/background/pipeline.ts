@@ -9,6 +9,7 @@ import type { Capture, Completed, OutputRef, Requested } from "../adapters/types
 import type { CaptureRecord } from "../shared/capture";
 
 export interface FaibleEvent {
+  owner_user_id?: string; // Local queue metadata, stripped before API ingest.
   event_id: string;
   type: string;
   occurred_at: string;
@@ -17,6 +18,7 @@ export interface FaibleEvent {
 }
 
 export interface StoredOutput extends OutputRef {
+  owner_user_id?: string;
   service: string;
   job_id: string;
   /** Fetchable URL: the original signed URL when `url` is redacted. Never leaves the extension. */

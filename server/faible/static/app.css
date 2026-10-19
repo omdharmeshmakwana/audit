@@ -111,3 +111,23 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 .bar { height: 6px; background: #ececea; border-radius: 3px; overflow: hidden; width: 120px; display: inline-block; vertical-align: middle; }
 .bar > span { display: block; height: 100%; background: var(--accent); }
 .bar.over > span { background: var(--bad); }
+
+.artist-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; }
+.artist-card h2 { margin: 0; font-size: 16px; text-transform: none; letter-spacing: 0; }
+.artist-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 18px 0; }
+.artist-metrics span, .artist-metrics strong { display: block; }
+.artist-metrics strong { font-size: 18px; overflow-wrap: anywhere; }
+.artist-card summary { cursor: pointer; }
+.artist-card table { margin-bottom: 14px; }
+.history-card { margin-bottom: 12px; }
+.history-card pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.history-controls { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.history-controls button:disabled { opacity: .4; cursor: default; }
+
+.dashboard-outputs { display: flex; gap: 16px; flex-wrap: wrap; margin: 14px 0; }
+.dashboard-outputs figure { margin: 0; max-width: 360px; }
+.dashboard-preview { display: block; width: 100%; max-height: 240px; object-fit: contain; border-radius: 8px; background: #111; margin-bottom: 8px; }
+
+form.inline { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin: 8px 0 16px; }
+form.inline label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+form.inline input { padding: 6px 8px; }
