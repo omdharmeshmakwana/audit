@@ -157,7 +157,7 @@ export const WARNING_TERMS: string[] = [
   "luigi",
   "sonic",
   "spongebob",
-  "",
+  "shrek",
   "buzz lightyear",
   "woody"
 ];

@@ -227,3 +227,101 @@ Every deviation from `faible-tracking-v1-prompt.md`, dated. Newest last.
     admin@faiblemedia.com is demoted through user.role_changed, an append-only role event
     so replay cannot restore revoked privileges. Role changes are local CLI operations;
     extension ingest cannot submit role events or another user's active-shot event.
+
+## 2026-10-19 — Cross-service chain fixes
+
+52. **Higgsfield uploads moved to `upload.higgsfield.ai`.** `media/batch` now hands out
+    presigned `PUT` URLs on that host instead of raw S3; the adapter accepts both. Found as
+    `adapter.unknown_payload` on the first live Magnific → Higgsfield test (#39 working).
+53. **Inputs are fetched at submit, not only at upload.** An image picked again from the
+    Higgsfield library is not re-uploaded, so no `upload_bytes` arrives. Every
+    `generation.requested` input with an `https` URL and a service id gets an `upload` hash
+    job (skipped if that URL was already hashed); the server back-fills the input when the
+    location registers, and pHash links it to its source.
+54. **A match step's "at" is the earlier of the derived asset's first sighting and the start
+    of the first activity that consumed it** (refines #47). A late-registered input otherwise
+    sorted after the generation that used it.
+
+## 2026-10-23 — Higgsfield exporter integration
+
+59. **The standalone Higgsfield exporter (`../higgsfield_exporter`) is merged into Faible, not
+    copied beside it.** Requested by the user, with event-schema and migration changes
+    approved in the same request (§12). One capture path: the exporter's generation detection,
+    login detection, auto-scroll, "Save usage page" and JSON export now run on the records
+    Faible's page-world observer already relays (`extension/src/content/history.ts`,
+    `src/history/*`), after Faible's redaction, which is stricter than the exporter's (JWTs,
+    bearer tokens and signed-URL params inside strings). The exporter project and its files
+    are left untouched and keep working on their own.
+60. **Service history is its own evidence stream, never an employee's generations.** History
+    listings show every artist's jobs (shared workspace), so each object becomes
+    `service_generation.observed` (raw service object, evidence `service_reported`), derived
+    into `service_generations`, one row per (service, job id). The observer is recorded, never
+    used as the author. Analytics joins it to activities on (service, `service_job_id`): a job
+    captured live counts once, as the employee's activity; history with no live capture is
+    "unattributed" and only shown to directors/admins, in its own section. The live
+    `generation.*` path (#33) is unchanged.
+61. **Merge rule for history rows** (deterministic in log order, so `rebuild` is exact): an
+    observation at least as final as the stored status replaces the derived fields; a less
+    final one (an old export imported later) only fills empty fields. The interpretation of
+    raw objects (`faible/service_history.py`) is a port of the exporter's `merge_exports.py`
+    and `exporter.js`, walking dict keys in sorted order because JSONB does not keep key order
+    (found when the first real-data rebuild differed).
+62. **"Save usage page" is `usage.page_captured`.** The page's JSON responses are service data;
+    its tables and text are read from the DOM and carry `dom_evidence: observed_dom` (hard rule
+    2: DOM data is labelled). Responses are capped at 4 MB per capture (newest kept), text at
+    500,000 characters as in the exporter. The page snapshot is redacted in the page before it
+    leaves; the event schema redacts both new types again on every ingest path.
+63. **The Higgsfield login is metadata.** The exporter's Clerk poll moved into the page-world
+    observer (`transport: "account"`, Higgsfield top frame only, id/email/names only). It labels
+    exports and `service_login` on the new events; manual labels and renames from the popup
+    are kept. It is never used for attribution and never claimed to be an employee.
+64. **Local history store and JSON export are kept per browser**, with the exporter's IndexedDB
+    schema and file formats (`generations.json`, `generations_raw.json`, `usage_raw.json`), in
+    the Faible extension's own origin (`faible-history`). As in the exporter, it collects even
+    when nobody is signed in to Faible; nothing is sent to the server without a Faible login.
+    The old exporter extension's IndexedDB belongs to another extension id and cannot be read:
+    its data moves via its own Export, then `faible import-history`.
+65. **`faible import-history` reads exporter files from the command line** (an admin script
+    on the server machine, as with the seed's shot list; the extension still never reads local
+    files). Formats: raw, normalized, audited/selected, merged, Seedance custom-interface and
+    usage files. Imported events have source `import` and no actor (an export names a shared
+    login, not a person). Event ids are uuid5 of file + record + content and `occurred_at` is
+    the file's export time, so a re-import is all `duplicate`; content already recorded (merged
+    files repeat the per-account exports) is skipped without appending (`unchanged`). The
+    custom Seedance tool's records are service `custom_interface`; its user email is kept as
+    service-login metadata, not mapped onto Faible accounts.
+66. **`faible export-history`** writes service history and usage captures back out in the
+    exporter's formats, one folder per Higgsfield login, into a new folder only (never
+    overwrites), so the exporter's dashboard, audit/review pages and merge script read them.
+67. **Extension ingest restrictions.** The extension may send the two new types only with its
+    own `source` (`history`, `extension`); other values are rejected per event, like any
+    invalid event, so one cannot wedge the retry queue. History/usage messages to the worker
+    are accepted only from content scripts on Higgsfield pages. Queue batches also stop at
+    8 MB of JSON (history objects and usage pages are large).
+68. **Dashboard and analytics.** `/dashboard` keeps the live feed and adds Overview (employee
+    analytics: breakdowns by day, hour, service, model, status, type, project, shot; prompts
+    with the chain neighbours `faible.chain` walks and a link to the full chain; downloads;
+    the employee comparison for managers), Usage pages and Higgsfield history. One filter bar
+    (period, IANA time zone, service, model, status, project, shot, type, employee) drives
+    every tab and the existing `/api/v1/dashboard` feed, which is the drill-down target.
+    Costs are summed per currency as reported; a live activity with no cost takes its
+    history record's (counted as such); unknown costs are counted, never zeroed; "UI credits"
+    = Higgsfield units ÷ 100 is labelled as an estimate (the exporter's convention, unit still
+    UNVERIFIED). USD rates stay in the exporter's own dashboard (they were set per shared
+    login, which does not map onto employees). External CDN media is linked, not loaded.
+
+## 2026-10-23 — Demo data removed from the live database
+
+69. **The live database no longer holds the seed's demo data** (user request). The log cannot
+    be edited, so `scripts/copy_without_demo.py` built a new log from the old one, in order:
+    the seed's 52 events are dropped (demo users director@studio and artist2@studio, the DEMO
+    project with its 2 sequences and 10 shots, 3 characters and 9 placeholder references, the
+    synthetic chain and its shot version); the 8 `shot.active_set` events that pointed at demo
+    shots are dropped; the 11 real generations that had been filed under demo shots keep every
+    field except `shot_id`, which is cleared (they are unassigned until a real project's shots
+    exist). artist1@studio stays registered and disabled, holding the one real generation
+    captured under it on 13 Oct (user's choice). Real accounts, their password hashes and
+    disabled flags are copied; event ids, occurred_at, evidence, source and actor are kept;
+    recorded_at and hashes are new (a new chain, 92 events, verify-log and rebuild pass). The
+    old database is kept unchanged as `faible_backup_with_demo_2026_10_23`; the 12 stored files
+    only the demo used are in `data/backups/demo-assets-2026-10-23/` (same layout).

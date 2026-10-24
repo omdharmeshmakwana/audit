@@ -28,6 +28,15 @@
       li { padding: 3px 0; border-bottom: 1px solid var(--line); }
       li time { color: var(--muted); margin-right: 6px; font-variant-numeric: tabular-nums; }
       .hidden { display: none; }
+      #history-section { border-top: 1px solid var(--line); padding-top: 12px; }
+      #history-section input[type="text"] { flex: 1; min-width: 0; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; font: inherit; }
+      #accounts li { display: grid; gap: 2px; padding: 6px 0; }
+      #accounts .name { font-weight: 600; word-break: break-all; }
+      #accounts .meta { color: var(--muted); }
+      #accounts .actions { display: flex; gap: 6px; margin-top: 2px; }
+      #accounts button { padding: 2px 8px; font-size: 12px; }
+      button.danger { color: var(--bad); }
+      .small { font-size: 12px; }
     </style>
   </head>
   <body>
@@ -73,6 +82,38 @@
           <button id="logout">Log out</button>
           <label class="muted" style="margin:0 0 0 auto"><input type="checkbox" id="discovery" /> discovery log</label>
         </section>
+      </section>
+
+      <!-- The integrated Higgsfield exporter (DECISIONS #59): works signed in or not. -->
+      <section id="history-section">
+        <h2>Higgsfield history &amp; usage</h2>
+        <div id="not-hf" class="muted small">Open a higgsfield.ai tab to collect its history or save a usage page.</div>
+        <div id="hf" class="hidden">
+          <dl>
+            <dt>Higgsfield login</dt><dd id="acct">—</dd>
+            <dt>Captured on page</dt><dd id="page-count">0</dd>
+            <dt id="pending-label" class="hidden">Waiting for login</dt><dd id="pending-count" class="hidden">0</dd>
+          </dl>
+          <div id="acct-manual" class="hidden">
+            <p class="muted small">Login not detected yet. Browse a bit, or name it yourself:</p>
+            <div class="row"><input type="text" id="manual-label" placeholder="e.g. subscriptions.9@faiblemedia.com" /><button id="manual-set">Set</button></div>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <button id="scroll" class="primary">Auto-scroll &amp; capture</button>
+            <button id="stop" class="hidden">Stop</button>
+            <button id="usage">Save usage page</button>
+          </div>
+          <p id="scroll-status" class="muted small"></p>
+          <p id="usage-status" class="muted small">On the Usage or Organization page: saves its credits, $ spend and transactions.</p>
+        </div>
+        <p id="history-sync" class="muted small"></p>
+        <div class="row" style="justify-content:space-between">
+          <h2 style="margin:0">Saved in this browser</h2>
+          <button id="export-all">Export all</button>
+        </div>
+        <p class="small"><span class="muted">Saving to</span> <a href="#" id="folder">choose folder</a> <span id="export-status" class="muted"></span></p>
+        <ul id="accounts"></ul>
+        <p id="empty" class="muted small hidden">Nothing captured yet.</p>
       </section>
     </main>
     <script src="popup.js"></script>

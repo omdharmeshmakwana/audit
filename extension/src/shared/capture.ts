@@ -9,7 +9,8 @@ export type Transport =
   | "sse"
   | "download"
   | "blob" // page created an object URL for a media Blob; hashed in the page (method 2)
-  | "fingerprint"; // worker fetched a job's output URL and hashed it (methods 1 and 3)
+  | "fingerprint" // worker fetched a job's output URL and hashed it (methods 1 and 3)
+  | "account"; // the page's service login (Higgsfield Clerk user): history-export metadata only
 
 /** Files above this are located but not hashed (spec §4.2). */
 export const MAX_HASH_BYTES = 500 * 1024 * 1024;

@@ -20,6 +20,7 @@ const options = {
     relay: "src/content/relay.ts",
     popup: "src/popup/popup.ts",
     login: "src/popup/login.ts",
+    export: "src/popup/export-page.ts",
   },
   outdir,
   bundle: true,

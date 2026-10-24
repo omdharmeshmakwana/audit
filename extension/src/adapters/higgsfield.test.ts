@@ -105,6 +105,16 @@ describe("higgsfield adapter", () => {
     expect(urlKey("https://s3/x.png?X-Amz-Signature=1")).toBe("https://s3/x.png");
   });
 
+  it("upload via the upload.higgsfield.ai host joins its slot the same way", () => {
+    const slot = one<Capture>(parse("media-batch-upload-host.json"));
+    expect(slot).toMatchObject({ kind: "upload_slot", service_asset_id: "6e459e23-b95d-4cc4-b45c-fe40ec7e87ce" });
+    const put = fixture("upload-host-put.json");
+    put.request_body = { __blob: true, size: 1712386, type: "image/png", __sha256: "c".repeat(64) };
+    const bytes = one<Capture>(higgsfield.parse(put));
+    expect(bytes).toMatchObject({ kind: "upload_bytes", sha256: "c".repeat(64) });
+    expect(slot.kind === "upload_slot" && bytes.kind === "upload_bytes" && slot.upload_url === bytes.upload_url).toBe(true);
+  });
+
   it("image upscale on the layer service → requested (upscale), then completed with a jobId alias", () => {
     expect(one<Requested>(parse("layer-upscale-submit.json"))).toMatchObject({
       job_id: "0844f6e1-fa8f-4bb0-9e82-9f9299ac1852",

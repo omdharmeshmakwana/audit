@@ -1,0 +1,144 @@
+{
+ "service": "higgsfield",
+ "transport": "fetch",
+ "captured_at": "2026-10-19T08:14:10.023Z",
+ "page_url": "https://higgsfield.ai/ai/image?model=gpt_image_2",
+ "method": "POST",
+ "url": "https://fnf-api-gw.higgsfield.ai/fnf/jobs/v2/gpt_image_2",
+ "status": 200,
+ "request_headers": {
+  "accept-language": "en",
+  "authorization": "[REDACTED]",
+  "content-type": "application/json",
+  "x-datadome-clientid": "ttBRaJpilhQrVFja0kW85SQPamDlFLn9AZM0bN8xKFL26LrPuVSEbJo3oKtjrQR~hBu6s8W~rKjX5vXP6XWp2AqUaLkDrTIhA6cFOqM3Pnat1tnUXFDImq~AJCn5NSvn"
+ },
+ "request_body": {
+  "params": {
+   "aspect_ratio": "auto",
+   "batch_size": 1,
+   "height": 768,
+   "medias": [
+    {
+     "data": {
+      "id": "6e459e23-b95d-4cc4-b45c-fe40ec7e87ce",
+      "type": "media_input",
+      "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/6e459e23-b95d-4cc4-b45c-fe40ec7e87ce.png"
+     },
+     "role": "image"
+    }
+   ],
+   "model": "gpt_image_2",
+   "prompt": "In <<<image_1>>> make the man's skin tone fair",
+   "quality": "high",
+   "resolution": "2k",
+   "sub_model": "videotape-alpha",
+   "width": 1376
+  },
+  "use_free_gens": false,
+  "use_unlim": false
+ },
+ "response_headers": {
+  "content-type": "application/json",
+  "x-set-cookie": "datadome=v4V8OQbruevyrSDdkUXYQKk44DOvlRiXy8MFDTBuyaGN8aAdkvCcvbhXVMaQeG44WD_TKAZQ~BmslY~f5VK2VgCKEz_0Pze3sCZq2wTvL9EMpZ6kQRiMVstwm_3vSp6Y; Max-Age=31536000; Domain=.higgsfield.ai; Path=/; Secure; SameSite=Lax"
+ },
+ "response_body": {
+  "folder_credits": null,
+  "free_gens_v2": {
+   "items": []
+  },
+  "generation_seconds": {
+   "items": []
+  },
+  "has_more": false,
+  "id": "24df8a59-35af-44c8-90b5-53c112f69c2e",
+  "job_sets": [
+   {
+    "chain_id": null,
+    "client_meta": null,
+    "cluster_hash": "48a72e8380d2c0e807b40d52940f8cc1",
+    "cost": 650,
+    "created_at": 1792397649.761384,
+    "id": "72b8b8db-0435-4ca8-a265-35391d1f7f79",
+    "jobs": [
+     {
+      "board_ids": [],
+      "can_bypass_ip": false,
+      "cluster_hash": "48a72e8380d2c0e807b40d52940f8cc1",
+      "created_at": 1792397649.765912,
+      "deepfake_consent_required": false,
+      "folder_ids": [],
+      "id": "b36b9045-1eac-48ba-9e5c-cd5295292143",
+      "ip_check_finished": null,
+      "ip_detected": null,
+      "is_favourite": false,
+      "meta": {},
+      "published_at": null,
+      "representation": null,
+      "result": null,
+      "results": null,
+      "status": "queued",
+      "trace_id": "b36b9045-1eac-48ba-9e5c-cd5295292143",
+      "user_id": "user_36mMlkuUFLoVEvOM0icTtFFDdlE"
+     }
+    ],
+    "params": {
+     "aspect_ratio": "auto",
+     "height": 768,
+     "medias": [
+      {
+       "data": {
+        "id": "6e459e23-b95d-4cc4-b45c-fe40ec7e87ce",
+        "type": "media_input",
+        "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/6e459e23-b95d-4cc4-b45c-fe40ec7e87ce.png"
+       },
+       "role": "image"
+      }
+     ],
+     "model": "videotape-alpha",
+     "prompt": "In <<<image_1>>> make the man's skin tone fair",
+     "quality": "high",
+     "reference_elements": [],
+     "remove_bg": false,
+     "resolution": "2k",
+     "width": 1376
+    },
+    "parent_id": null,
+    "project_id": "24df8a59-35af-44c8-90b5-53c112f69c2e",
+    "type": "gpt_image_2"
+   }
+  ],
+  "wallet": {
+   "bonus_credits": 0,
+   "bonus_credits_expire_at": null,
+   "credit_limit": null,
+   "credits_balance": 163700,
+   "expire_days": 90,
+   "group_credit_allocation": null,
+   "next_credit_allocation_date": null,
+   "on_demand_credits": 25298,
+   "subscription_balance": 0,
+   "total_credits": 600000,
+   "wallet_created_at": "2025-12-13T06:30:47.592351Z",
+   "workspace_id": "24df8a59-35af-44c8-90b5-53c112f69c2e"
+  },
+  "workspace_details": {
+   "avatar_url": null,
+   "bio": null,
+   "can_publish_assets": true,
+   "clerk_organization_id": null,
+   "grace_period_type": null,
+   "id": "24df8a59-35af-44c8-90b5-53c112f69c2e",
+   "is_enterprise_sub_workspace": false,
+   "name": null,
+   "sso_status": "idle",
+   "sub_workspace_block": null,
+   "type": "private",
+   "user_role": "owner"
+  }
+ },
+ "extra": {
+  "duration_ms": 492,
+  "json": true,
+  "truncated": false
+ }
+}

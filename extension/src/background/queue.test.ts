@@ -3,7 +3,7 @@ import type { FaibleEvent } from "./pipeline";
 
 const mocks = vi.hoisted(() => ({ session: { user: { id: "artist-a" } } as { user: { id: string } } | null, api: vi.fn() }));
 vi.mock("./session", () => ({ getSession: async () => mocks.session, api: mocks.api, NotLoggedIn: class extends Error {} }));
-import { enqueueEvents, flush } from "./queue";
+import { enqueueEvents, flush, takeBatch } from "./queue";
 
 let storage: Record<string, unknown>;
 beforeEach(() => {
@@ -35,5 +35,16 @@ describe("queue artist attribution", () => {
     mocks.api.mockResolvedValue(new Response(JSON.stringify({ results: [{ event_id: "a", status: "accepted" }] })));
     await flush();
     expect(storage.eventQueue).toEqual([]);
+  });
+});
+
+describe("batch size", () => {
+  it("stops a batch at the JSON budget but always sends at least one event", () => {
+    const big = (id: string) => ({ ...event(id), payload: { raw: "x".repeat(400) } });
+    const events = ["a", "b", "c", "d"].map(big);
+    expect(JSON.stringify(events[0]).length).toBeLessThan(550); // ~510 chars each
+    expect(takeBatch(events, 1100).map((e) => e.event_id)).toEqual(["a", "b"]);
+    expect(takeBatch(events, 10).map((e) => e.event_id)).toEqual(["a"]);
+    expect(takeBatch(events, 1_000_000, 3)).toHaveLength(3);
   });
 });

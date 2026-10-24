@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Faible · Higgsfield history export</title>
+    <style>
+      body { font: 14px/1.5 system-ui, -apple-system, sans-serif; max-width: 560px; margin: 40px auto; padding: 0 16px; color: #16181d; background: #f6f6f4; }
+      main { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px 22px; }
+      h1 { font-size: 18px; margin: 0 0 12px; }
+      .row { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+      .muted { color: #6b7280; font-size: 13px; }
+      button { font: inherit; padding: 6px 12px; border: 1px solid #e5e7eb; border-radius: 7px; background: #fff; cursor: pointer; }
+      button.primary { background: #2f5bd3; border-color: #2f5bd3; color: #fff; }
+      section { margin: 16px 0; }
+      #log { list-style: none; padding: 0; }
+      #log li { padding: 2px 0; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Higgsfield history export</h1>
+      <section>
+        <div class="row"><span class="muted">Export folder</span><strong id="folder">Not chosen</strong></div>
+        <p class="muted">Each Higgsfield login gets its own subfolder with <code>generations.json</code>, <code>generations_raw.json</code> and <code>usage_raw.json</code> (the standalone exporter's formats); old files in that subfolder are replaced. Pick a folder of its own — not the old exporter's <code>exports</code> folder, unless you mean to replace those files.</p>
+        <button id="pick">Choose folder…</button>
+      </section>
+      <section>
+        <button id="run" class="primary">Export</button>
+        <ul id="log"></ul>
+      </section>
+    </main>
+    <script src="export.js"></script>
+  </body>
+</html>

@@ -100,3 +100,14 @@ describe("page-world fetch observer", () => {
     expect(posted).toHaveLength(0);
   });
 });
+
+describe("service login for history export", () => {
+  it("relays the Clerk login (id, email, names) and nothing else from the user object", async () => {
+    (window as unknown as { Clerk: unknown }).Clerk = {
+      user: { id: "user_1", fullName: "Sub Nine", username: null, primaryEmailAddress: { emailAddress: "subscriptions.9@faiblemedia.com" }, sessionToken: "tok" },
+    };
+    await new Promise((r) => setTimeout(r, 2100));
+    const acct = posted.find((r) => r.transport === "account");
+    expect(acct?.extra.account).toEqual({ id: "user_1", email: "subscriptions.9@faiblemedia.com", name: "Sub Nine", username: null, source: "clerk" });
+  }, 5000);
+});

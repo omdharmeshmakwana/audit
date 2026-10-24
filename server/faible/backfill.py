@@ -4,11 +4,15 @@
   pHash via a follow-up `asset.registered` ("includes phash once computed", spec §3).
 - `fetch_missing`: assets known only by hash (uploads the extension located but could not
   copy) are fetched from a *public* location URL, verified against their sha256, stored and
-  fingerprinted. Signed/redacted URLs are skipped: they were never stored and have expired.
-  An admin tool (DECISIONS #40); in normal operation the extension supplies the bytes.
+  fingerprinted. Then generation inputs known only by a service id and a public URL (no
+  bytes ever seen, e.g. captured before DECISIONS #53) are fetched and registered at that
+  location, which resolves the input and lets pHash link it to its source. Signed/redacted
+  URLs are skipped: they were never stored and have expired. An admin tool (DECISIONS #40);
+  in normal operation the extension supplies the bytes.
 """
 
 import hashlib
+import ssl
 import urllib.request
 import uuid
 from dataclasses import dataclass, field
@@ -20,10 +24,29 @@ from sqlalchemy.orm import Session
 
 from faible.fingerprint import fingerprint_file
 from faible.log import EventIn, append_events
-from faible.models import Asset, AssetLocation
+from faible.models import Activity, ActivityInput, Asset, AssetLocation
 from faible.storage import asset_path, store_bytes
 
 MAX_FETCH = 500 * 1024 * 1024
+
+
+def _tls() -> ssl.SSLContext:
+    # python.org builds on macOS ship without a CA bundle; certifi's is used when present.
+    try:
+        import certifi
+
+        return ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        return ssl.create_default_context()
+
+
+def _public(url: str | None) -> bool:
+    return url is not None and url.startswith("https://") and "[REDACTED]" not in url
+
+
+def _fetch(url: str) -> tuple[bytes, str | None]:
+    with urllib.request.urlopen(url, timeout=60, context=_tls()) as res:  # noqa: S310 - https only
+        return res.read(MAX_FETCH + 1), res.headers.get("content-type")
 
 
 @dataclass
@@ -86,16 +109,14 @@ def fetch_missing(session: Session) -> BackfillReport:
             for loc in session.scalars(
                 select(AssetLocation).where(AssetLocation.asset_id == asset.id)
             )
-            if loc.url.startswith("https://") and "[REDACTED]" not in loc.url
+            if _public(loc.url)
         ]
         if not urls:
             report.skipped.append(f"{asset.sha256[:12]} no public location")
             continue
         for url in urls:
             try:
-                with urllib.request.urlopen(url, timeout=60) as res:  # noqa: S310 - https only
-                    data = res.read(MAX_FETCH + 1)
-                    content_type = res.headers.get("content-type")
+                data, content_type = _fetch(url)
             except OSError as exc:
                 report.skipped.append(f"{asset.sha256[:12]} {url[:60]}: {exc}")
                 continue
@@ -113,4 +134,40 @@ def fetch_missing(session: Session) -> BackfillReport:
             _register(session, asset.sha256, payload)
             report.done.append(asset.sha256[:12])
             break
+    _fetch_unresolved_inputs(session, report)
     return report
+
+
+def _fetch_unresolved_inputs(session: Session, report: BackfillReport) -> None:
+    rows = session.scalars(
+        select(ActivityInput).where(
+            ActivityInput.asset_id.is_(None), ActivityInput.ref_url.is_not(None)
+        )
+    )
+    seen: set[str] = set()
+    for inp in rows:
+        url = inp.ref_url
+        if url is None or url in seen:
+            continue
+        seen.add(url)
+        label = f"input {(inp.ref_service_asset_id or url)[:12]}"
+        if not _public(url):
+            report.skipped.append(f"{label} no public URL")
+            continue
+        try:
+            data, content_type = _fetch(url)
+        except OSError as exc:
+            report.skipped.append(f"{label} {url[:60]}: {exc}")
+            continue
+        if len(data) > MAX_FETCH:
+            report.skipped.append(f"{label} over 500 MB")
+            continue
+        sha = store_bytes(data)
+        service = inp.ref_service or session.get_one(Activity, inp.activity_id).service
+        location = {"service": service, "url": url}
+        if inp.ref_service_asset_id:
+            location["service_asset_id"] = inp.ref_service_asset_id
+        payload: dict[str, Any] = {"media_type": content_type, "bytes": len(data), "stored": True}
+        payload |= _fp_payload(sha, content_type)
+        _register(session, sha, payload | {"locations": [location]})
+        report.done.append(f"{label} → {sha[:12]}")

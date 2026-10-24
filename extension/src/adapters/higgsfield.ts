@@ -27,7 +27,8 @@ const CANCEL = /^https:\/\/fnf-api-gw\.higgsfield\.ai\/fnf\/jobs\/([0-9a-f-]{36}
 const HISTORY = /^https:\/\/fnf-api-gw\.higgsfield\.ai\/fnf\/jobs\/accessible/;
 const STREAM = /^https:\/\/fnf-api-gw\.higgsfield\.ai\/fnf-notification\/notifications\/stream/;
 const MEDIA_BATCH = /^https:\/\/fnf-api-gw\.higgsfield\.ai\/fnf\/media\/batch/;
-const S3_UPLOAD = /^https:\/\/fast-and-furious-input[^/]*\.s3\.amazonaws\.com\//;
+// Presigned upload targets: raw S3 until ~Oct 2026, then the upload.higgsfield.ai front.
+const S3_UPLOAD = /^https:\/\/(fast-and-furious-input[^/]*\.s3\.amazonaws\.com|upload\.higgsfield\.ai)\//;
 // Image upscale (topaz_image) runs on the layer editor service, not the main API.
 const LAYER_GENERATIONS = /^https:\/\/layer-worker\.higgsfield\.ai\/api\/layer-projects\/[^/]+\/generations/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;

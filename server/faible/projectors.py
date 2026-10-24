@@ -36,14 +36,18 @@ from faible.models import (
     ReferenceAsset,
     Sequence,
     ServiceAccount,
+    ServiceGeneration,
     Shot,
     ShotEntity,
     ShotVersion,
     UnknownPayload,
+    UsageCapture,
     User,
     asset_id_for,
     service_account_id_for,
+    service_generation_id_for,
 )
+from faible.service_history import STATUS_RANK, normalize
 
 TERMINAL = {"succeeded", "failed", "cancelled"}
 
@@ -601,6 +605,93 @@ def adapter_unknown_payload(session: Session, e: Event) -> None:
     session.flush()
 
 
+# ---------------------------------------------------------------- service history and usage
+
+MAX_SOURCES = 20
+
+
+def _login(p: dict[str, Any]) -> tuple[str | None, str | None]:
+    login = p.get("service_login") or {}
+    return login.get("email"), login.get("label") or login.get("name") or login.get("username")
+
+
+def service_generation_observed(session: Session, e: Event) -> None:
+    """Upsert one row per (service, service_job_id), however many browsers, pages and
+    export files list the job. Merge rule, deterministic in log order: an observation whose
+    status is at least as final as the stored one replaces the derived fields (a completed
+    job's results supersede its queued state); an older, less final one (a stale export
+    imported later) only fills fields that are still empty."""
+    p = e.payload
+    fields = normalize(p["service"], p["raw"])
+    email, label = _login(p)
+    source = p.get("source_url") or p.get("source_file")
+    row = session.get(
+        ServiceGeneration, service_generation_id_for(p["service"], p["service_job_id"])
+    )
+    if row is None:
+        session.add(
+            ServiceGeneration(
+                id=service_generation_id_for(p["service"], p["service_job_id"]),
+                service=p["service"],
+                service_job_id=p["service_job_id"],
+                raw=p["raw"],
+                login_email=email,
+                login_label=label,
+                first_observed_at=e.occurred_at,
+                last_observed_at=e.occurred_at,
+                observation_count=1,
+                first_observed_by_user_id=e.actor_user_id,
+                sources=[source] if source else [],
+                evidence=e.evidence,
+                **fields,
+            )
+        )
+        session.flush()
+        return
+    newer = STATUS_RANK.get(fields["status"], 0) >= STATUS_RANK.get(row.status, 0)
+    for name, value in fields.items():
+        if value in (None, [], {}):
+            continue
+        if newer or getattr(row, name) in (None, [], {}):
+            setattr(row, name, value)
+    if newer:
+        row.raw = p["raw"]
+    row.login_email = email or row.login_email
+    row.login_label = label or row.login_label
+    row.first_observed_at = min(row.first_observed_at, e.occurred_at)
+    row.last_observed_at = max(row.last_observed_at, e.occurred_at)
+    row.observation_count += 1
+    if source and source not in row.sources and len(row.sources) < MAX_SOURCES:
+        row.sources = [*row.sources, source]
+    session.flush()
+
+
+def usage_page_captured(session: Session, e: Event) -> None:
+    p = e.payload
+    email, label = _login(p)
+    session.add(
+        UsageCapture(
+            id=_uuid(p["capture_id"]),
+            event_id=e.event_id,
+            service=p["service"],
+            captured_at=e.occurred_at,
+            captured_by_user_id=e.actor_user_id,
+            page_url=p["page_url"],
+            page_title=p.get("page_title"),
+            login_email=email,
+            login_label=label,
+            service_user_id=(p.get("service_login") or {}).get("service_user_id"),
+            response_count=len(p.get("responses") or []),
+            tables=p.get("tables") or [],
+            text_chars=len(p.get("text") or ""),
+            source=p["source"],
+            source_file=p.get("source_file"),
+            evidence=e.evidence,
+        )
+    )
+    session.flush()
+
+
 def _noop(session: Session, e: Event) -> None:
     """Event types whose derived tables arrive in a later phase (audit flags: Phase 4)."""
 
@@ -629,6 +720,8 @@ PROJECTORS: dict[str, Projector] = {
     "audit.flag_raised": _noop,
     "audit.flag_dismissed": _noop,
     "adapter.unknown_payload": adapter_unknown_payload,
+    "service_generation.observed": service_generation_observed,
+    "usage.page_captured": usage_page_captured,
 }
 
 

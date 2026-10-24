@@ -15,6 +15,7 @@ import difflib
 import re
 import uuid
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import or_, select
@@ -76,6 +77,9 @@ class _Walk:
     matches: list[dict[str, Any]] = field(default_factory=list)
     origins: dict[uuid.UUID, Asset] = field(default_factory=dict)
     seen: set[uuid.UUID] = field(default_factory=set)
+    # Earliest start of an activity that consumed the asset. An input's bytes can be
+    # registered after the generation that used it, but it existed by then.
+    used_at: dict[uuid.UUID, datetime] = field(default_factory=dict)
 
     def producers(self, asset_id: uuid.UUID) -> list[Activity]:
         via_output = select(ActivityOutput.activity_id).where(ActivityOutput.asset_id == asset_id)
@@ -130,6 +134,9 @@ class _Walk:
                         select(ActivityInput).where(ActivityInput.activity_id == act.id)
                     ):
                         if inp.asset_id:
+                            prev = self.used_at.get(inp.asset_id)
+                            if prev is None or act.started_at < prev:
+                                self.used_at[inp.asset_id] = act.started_at
                             stack.append(inp.asset_id)
                 continue
             found = self.best_match(asset)
@@ -138,7 +145,7 @@ class _Walk:
                 self.matches.append(
                     {
                         "type": "match",
-                        "at": asset.first_seen_at,
+                        "at": min(asset.first_seen_at, self.used_at.get(aid, asset.first_seen_at)),
                         "derived": asset_view(asset, self.labels.get(asset.id)),
                         "source": asset_view(source, self.labels.get(source.id)),
                         "method": sim.method,

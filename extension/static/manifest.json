@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Faible",
-  "version": "0.3.0",
-  "description": "Records Higgsfield and Magnific generations into the studio's Faible provenance log.",
+  "version": "0.4.0",
+  "description": "Records Higgsfield and Magnific generations into the studio's Faible provenance log, and collects Higgsfield history and usage pages (the integrated Higgsfield exporter).",
   "permissions": [
     "storage",
     "unlimitedStorage",

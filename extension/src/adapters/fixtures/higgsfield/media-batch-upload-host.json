@@ -1,0 +1,39 @@
+{
+ "service": "higgsfield",
+ "transport": "fetch",
+ "captured_at": "2026-10-19T07:50:40.132Z",
+ "page_url": "https://higgsfield.ai/ai/image?model=gpt_image_2",
+ "method": "POST",
+ "url": "https://fnf-api-gw.higgsfield.ai/fnf/media/batch",
+ "status": 200,
+ "request_headers": {
+  "accept-language": "en",
+  "authorization": "[REDACTED]",
+  "content-type": "application/json",
+  "x-datadome-clientid": "FYq3dA2cBm3i_qmzAEPMH1dFzn_Pj3CUv0zYenbsotSp09Jh~sUMYfB1jgIe6YxQBFZvgJWRCwuCLcbFkV4SXCsIB3ABgz_uHejYZt7GRJtCPIKmyEAqTYEBMbhcjzTH"
+ },
+ "request_body": {
+  "force_ip_check": false,
+  "mimetypes": [
+   "image/png"
+  ],
+  "source": "user_upload"
+ },
+ "response_headers": {
+  "content-type": "application/json",
+  "x-set-cookie": "datadome=2abHZ9vz_N4wb0PLvmV4bWyq7NZ36To8nsPSXn9EhyCTG1qNQKFRj9CIbr7OQmheV0sh4FTTlwyoPCnXIVY36~jffcy5xaUAWFfBl6aQ_IQUlP6aZfk3s2NW06cnsR0w; Max-Age=31536000; Domain=.higgsfield.ai; Path=/; Secure; SameSite=None"
+ },
+ "response_body": [
+  {
+   "content_type": "image/png",
+   "id": "6e459e23-b95d-4cc4-b45c-fe40ec7e87ce",
+   "upload_url": "https://upload.higgsfield.ai/user_36mMlkuUFLoVEvOM0icTtFFDdlE/6e459e23-b95d-4cc4-b45c-fe40ec7e87ce.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=[REDACTED]&X-Amz-Date=20261019T075040Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=content-type%3Bhost%3Bif-none-match&X-Amz-Security-Token=[REDACTED]&X-Amz-Signature=[REDACTED]",
+   "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_36mMlkuUFLoVEvOM0icTtFFDdlE/6e459e23-b95d-4cc4-b45c-fe40ec7e87ce.png"
+  }
+ ],
+ "extra": {
+  "duration_ms": 451,
+  "json": true,
+  "truncated": false
+ }
+}

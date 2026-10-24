@@ -8,11 +8,13 @@
 
 import { adapterFor } from "../adapters";
 import { bodyFileSha, normalizeUrl } from "../adapters/types";
+import * as HistoryDB from "../history/db";
+import { serviceLogin, type ServiceAccountInfo } from "../history/extract";
 import { SERVER_URL, serviceForHost, type CaptureRecord } from "../shared/capture";
 import { redactUrl } from "../shared/redact";
 import { clearAssetState, fingerprintDownload, hashOutput, recordBlob, refetchDownload } from "./assets";
 import { locked } from "./lock";
-import { completedFromDownload, emptyState, plan, pruneState, type FaibleEvent, type PipelineState } from "./pipeline";
+import { completedFromDownload, emptyState, plan, planHistory, pruneState, usageEvent, type FaibleEvent, type PipelineState } from "./pipeline";
 import { clearQueue, enqueueEvents, flush, queueState, scheduleFlush } from "./queue";
 import { apiJson, getSession, login, logout, NotLoggedIn, setActiveShot, type ActiveShot } from "./session";
 
@@ -75,6 +77,7 @@ async function emit(events: FaibleEvent[]): Promise<void> {
 }
 
 async function onCapture(record: CaptureRecord, signedUrls: Record<string, string>): Promise<void> {
+  if (record.transport === "account") return; // login metadata for history export, not traffic
   const session = await getSession();
   if (!session) return;
   void mirrorToDiscovery(record);
@@ -207,6 +210,47 @@ chrome.alarms.onAlarm.addListener((a) => {
   void flushDiscovery();
 });
 
+// ---------------------------------------------------------------- history and usage (DECISIONS #59)
+//
+// From the page's history module (content/history.ts). Every batch is kept in this browser's
+// store for JSON export, as the standalone exporter did, whether or not anyone is signed in
+// to Faible; it is sent to Faible only under the signed-in user, as service history (never
+// as that user's generations).
+
+const HISTORY_SERVICE = "higgsfield";
+
+async function loginFor(account: ServiceAccountInfo | null | undefined, key: string): Promise<Record<string, string | null> | null> {
+  const stored = await HistoryDB.getAccount(key).catch(() => undefined);
+  return serviceLogin(account ?? null, stored?.label ?? null);
+}
+
+async function onHistory(msg: Msg): Promise<{ sent: number }> {
+  const key = msg.accountKey ?? "unknown";
+  const items = (msg.items ?? []).filter((i) => typeof i?.id === "string");
+  await HistoryDB.saveGenerations(key, msg.url ?? "", items);
+  const session = await getSession();
+  if (!session || !items.length) return { sent: 0 };
+  const login = await loginFor(msg.account, key);
+  const batch = { service: HISTORY_SERVICE, url: msg.url ?? "", items, login, capturedAt: new Date().toISOString() };
+  const events = await withPipeline((s) => planHistory(batch, s, () => crypto.randomUUID()));
+  if (events.length) log(`${HISTORY_SERVICE}: ${events.length} history record(s) → Faible`);
+  await emit(events.map((event) => ({ ...event, owner_user_id: session.user.id })));
+  return { sent: events.length };
+}
+
+async function onUsage(msg: Msg): Promise<{ sent: boolean }> {
+  const key = msg.accountKey ?? "unknown";
+  if (!msg.capture) throw new Error("no capture");
+  await HistoryDB.saveUsage(key, msg.capture);
+  const session = await getSession();
+  if (!session) return { sent: false };
+  const login = await loginFor(msg.account, key);
+  const event = usageEvent(HISTORY_SERVICE, msg.capture, login, () => crypto.randomUUID());
+  log(`${HISTORY_SERVICE}: usage page “${msg.capture.pageTitle || msg.capture.pageUrl}” saved → Faible`);
+  await emit([{ ...event, owner_user_id: session.user.id }]);
+  return { sent: true };
+}
+
 // ---------------------------------------------------------------- messages (relay, panel, popup)
 
 interface Msg {
@@ -219,6 +263,21 @@ interface Msg {
   sha256s?: string[];
   shotId?: string;
   enabled?: boolean;
+  accountKey?: string;
+  account?: ServiceAccountInfo;
+  url?: string;
+  items?: Record<string, unknown>[];
+  capture?: HistoryDB.UsageCapture;
+}
+
+const FROM_HISTORY_PAGE = new Set(["hfAccount", "history", "usage"]);
+
+function fromHistoryPage(sender: chrome.runtime.MessageSender): boolean {
+  try {
+    return !!sender.tab && serviceForHost(new URL(sender.url ?? "").hostname) === HISTORY_SERVICE;
+  } catch {
+    return false;
+  }
 }
 
 async function state(): Promise<Record<string, unknown>> {
@@ -298,6 +357,13 @@ async function handle(msg: Msg): Promise<unknown> {
     case "setDiscovery":
       await chrome.storage.local.set({ [DISCOVERY_KEY]: !!msg.enabled });
       return state();
+    case "hfAccount":
+      if (msg.account?.key) await HistoryDB.upsertAccount(msg.account);
+      return null;
+    case "history":
+      return onHistory(msg);
+    case "usage":
+      return onUsage(msg);
     case "reset":
       await clearQueue();
       await clearAssetState();
@@ -311,6 +377,10 @@ async function handle(msg: Msg): Promise<unknown> {
 chrome.runtime.onMessage.addListener((msg: Msg, sender, reply) => {
   if (["login", "logout"].includes(msg.type) && !sender.url?.startsWith(chrome.runtime.getURL(""))) {
     reply({ ok: false, error: "Use the Faible login page" });
+    return false;
+  }
+  if (FROM_HISTORY_PAGE.has(msg.type) && !fromHistoryPage(sender)) {
+    reply({ ok: false, error: "History capture only comes from Higgsfield pages" });
     return false;
   }
   if (msg.type === "capture" && msg.record) {

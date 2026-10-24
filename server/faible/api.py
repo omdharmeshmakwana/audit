@@ -2,7 +2,7 @@
 
 import json
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Annotated, Any, Literal
 
 from fastapi import (
@@ -22,6 +22,14 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from faible.analytics import (
+    Filters,
+    analytics_data,
+    history_page,
+    make_filters,
+    usage_capture_detail,
+    usage_capture_list,
+)
 from faible.auth import (
     AuthError,
     authenticate,
@@ -34,7 +42,7 @@ from faible.chain import asset_chain
 from faible.db import get_session
 from faible.events import Evidence
 from faible.ingest_asset import AssetRejected, ingest_asset
-from faible.log import EventIn, append_events
+from faible.log import AppendResult, EventIn, append_events
 from faible.models import Asset, Project, Shot, ShotVersion, User
 from faible.storage import asset_path
 from faible.views import asset_detail, graph, my_captures, project_tree, shot_detail
@@ -140,17 +148,95 @@ def refresh(body: RefreshIn, session: DbSession) -> TokensOut:
     return TokensOut(access_token=issue_token(user_id, "access"), user_id=user_id)
 
 
+def filter_params(
+    employee_id: uuid.UUID | None = None,
+    date_from: Annotated[date | None, Query(alias="from")] = None,
+    date_to: Annotated[date | None, Query(alias="to")] = None,
+    tz: str | None = None,
+    service: str | None = None,
+    model: str | None = None,
+    status: str | None = None,
+    project_id: uuid.UUID | None = None,
+    shot: str | None = None,
+    kind: str | None = None,
+) -> Filters:
+    """Shared analytics filters; `from`/`to` are dates in `tz` (IANA, default UTC)."""
+    return make_filters(
+        employee_id=employee_id,
+        date_from=date_from,
+        date_to=date_to,
+        tz=tz,
+        service=service,
+        model=model,
+        status=status,
+        project_id=project_id,
+        shot=shot,
+        kind=kind,
+    )
+
+
+FilterParams = Annotated[Filters, Depends(filter_params)]
+
+
 @router.get("/dashboard")
 def live_dashboard(
     session: DbSession,
     user: CurrentUser,
+    filters: FilterParams,
     artist_id: uuid.UUID | None = None,
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ) -> dict[str, Any]:
     from faible.dashboard import dashboard_data
 
-    return dashboard_data(session, user, artist_id, limit=limit, offset=offset)
+    return dashboard_data(session, user, artist_id, limit=limit, offset=offset, filters=filters)
+
+
+@router.get("/analytics")
+def get_analytics(session: DbSession, user: CurrentUser, filters: FilterParams) -> dict[str, Any]:
+    """Employee analytics (an artist: their own) and, for directors/admins, the studio
+    comparison and unattributed service history. Counting rules are in the response."""
+    return analytics_data(session, user, filters)
+
+
+@router.get("/usage-captures")
+def get_usage_captures(
+    session: DbSession,
+    user: CurrentUser,
+    filters: FilterParams,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+) -> dict[str, Any]:
+    return usage_capture_list(session, user, filters, limit=limit, offset=offset)
+
+
+@router.get("/usage-captures/{capture_id}")
+def get_usage_capture(
+    capture_id: uuid.UUID, session: DbSession, user: CurrentUser
+) -> dict[str, Any]:
+    return usage_capture_detail(session, user, capture_id)
+
+
+@router.get("/service-history")
+def get_service_history(
+    session: DbSession,
+    user: CurrentUser,
+    filters: FilterParams,
+    unattributed: bool = False,
+    login: str | None = None,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+) -> dict[str, Any]:
+    """Generations as the service's history lists them (directors/admins only)."""
+    return history_page(
+        session,
+        user,
+        filters,
+        unattributed_only=unattributed,
+        login=login,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @router.get("/me")
@@ -189,7 +275,30 @@ def ingest_events(
         for event in body.events
     ):
         raise HTTPException(403, "Account events cannot be submitted by the extension")
-    results = append_events(session, body.events, source="extension", actor_user_id=user.id)
+    # History and usage captures name their origin; the extension may only claim its own
+    # (exporter-file imports are a server-side script). Rejected one by one, like any invalid
+    # event, so a single bad event cannot wedge the extension's retry queue.
+    allowed = {"service_generation.observed": "history", "usage.page_captured": "extension"}
+    refused = {
+        e.event_id
+        for e in body.events
+        if e.type in allowed and e.payload.get("source") != allowed[e.type]
+    }
+    accepted = iter(
+        append_events(
+            session,
+            [e for e in body.events if e.event_id not in refused],
+            source="extension",
+            actor_user_id=user.id,
+        )
+    )
+    results: list[AppendResult] = []
+    for e in body.events:
+        if e.event_id in refused:
+            reason = f"{e.type} from the extension needs source {allowed[e.type]!r}"
+            results.append(AppendResult(e.event_id, "rejected", reason=reason))
+        else:
+            results.append(next(accepted))
     session.commit()
     return {
         "results": [

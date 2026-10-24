@@ -14,6 +14,10 @@ faible disable-account EMAIL                 refuse login and every existing tok
 faible enable-account EMAIL                  allow a disabled account to log in again
 faible set-password EMAIL [--password PW]    reset an account's password (prompts if omitted)
 faible disable-demo-accounts                 disable the seeded *@studio demo accounts
+faible import-history PATH… [--dry-run]      Higgsfield exporter files/folders → the log
+                                             (idempotent; attributed to no employee)
+faible export-history [--out DIR]            service history + usage captures as exporter
+                                             files (generations.json, _raw, usage_raw.json)
 """
 
 import argparse
@@ -224,6 +228,62 @@ def _disable_demo_accounts() -> int:
     return 0
 
 
+def _import_history(paths: list[str], dry_run: bool) -> int:
+    from pathlib import Path
+
+    from faible.history_io import import_history
+
+    missing = [p for p in paths if not Path(p).exists()]
+    if missing:
+        print(f"not found: {', '.join(missing)}")
+        return 1
+    with get_sessionmaker()() as session:
+        reports = import_history(session, [Path(p) for p in paths], dry_run=dry_run)
+    totals = {"accepted": 0, "duplicate": 0, "conflict": 0, "rejected": 0}
+    for r in reports:
+        if r.format == "skipped":
+            print(f"  skip   {r.path}: {'; '.join(r.reasons)}")
+            continue
+        counts = ", ".join(f"{k} {getattr(r, k)}" for k in totals if getattr(r, k))
+        extra = f", {r.skipped} without an id" if r.skipped else ""
+        extra += f", {r.unchanged} already recorded" if r.unchanged else ""
+        print(f"  {r.format:<10} {r.path}: {r.records} records → {counts or 'nothing'}{extra}")
+        for reason in r.reasons:
+            print(f"             {reason}")
+        for k in totals:
+            totals[k] += getattr(r, k)
+    verb = "would append" if dry_run else "appended"
+    print(
+        f"import-history: {verb} {totals['accepted']} events, {totals['duplicate']} already "
+        f"present, {totals['conflict']} conflicts, {totals['rejected']} rejected"
+    )
+    return 1 if totals["conflict"] or totals["rejected"] else 0
+
+
+def _export_history(out: str | None) -> int:
+    from datetime import datetime
+    from pathlib import Path
+
+    from faible.config import get_settings
+    from faible.history_io import export_history
+
+    target = (
+        Path(out)
+        if out
+        else (get_settings().data_dir / "exports" / f"history-{datetime.now():%Y%m%d-%H%M%S}")
+    )
+    with get_sessionmaker()() as session:
+        try:
+            written = export_history(session, target)
+        except FileExistsError as exc:
+            print(exc)
+            return 1
+    for path in written:
+        print(f"  wrote {path}")
+    print(f"export-history: {len(written)} files in {target}")
+    return 0
+
+
 COMMANDS: dict[str, Callable[[], int]] = {
     "verify-log": _verify_log,
     "rebuild": _rebuild,
@@ -316,13 +376,24 @@ def main(argv: list[str] | None = None) -> int:
                 "disable-account",
                 "enable-account",
                 "set-password",
+                "import-history",
+                "export-history",
             ]
         ),
     )
     parser.add_argument("arg", nargs="?")
+    parser.add_argument("paths", nargs="*", help=argparse.SUPPRESS)  # import-history PATH…
     parser.add_argument("--role", choices=["artist", "admin"], default="artist")
     parser.add_argument("--password", help="Account password; omitted to prompt securely")
+    parser.add_argument("--dry-run", action="store_true", help="import-history: validate only")
+    parser.add_argument("--out", help="export-history: target folder (must be new or empty)")
     args = parser.parse_args(argv)
+    if args.command == "import-history":
+        if not args.arg:
+            parser.error("import-history needs exporter files or folders")
+        return _import_history([args.arg, *args.paths], args.dry_run)
+    if args.command == "export-history":
+        return _export_history(args.out)
     if args.command == "set-account-role":
         if not args.arg:
             parser.error("set-account-role needs an email")

@@ -270,6 +270,80 @@ class UnknownPayload(Base):
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
+# ---------------------------------------------------------------- service history and usage
+
+
+def service_generation_id_for(service: str, service_job_id: str) -> uuid.UUID:
+    return uuid.uuid5(UUID_NS, f"service_generation:{service}:{service_job_id}")
+
+
+class ServiceGeneration(Base):
+    """One generation as the service's own history lists it (`service_generation.observed`),
+    merged across every observation and import. Not attributed to anyone: the workspace is
+    shared, so the observer is recorded, never the author. The same job captured live is an
+    `Activity` with the same (service, service_job_id); analytics joins the two."""
+
+    __tablename__ = "service_generations"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
+    service: Mapped[str] = mapped_column(Text)
+    service_job_id: Mapped[str] = mapped_column(Text)
+    kind: Mapped[str] = mapped_column(Text)
+    model_id: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(Text)  # Faible vocabulary, or "unknown"
+    service_status: Mapped[str | None] = mapped_column(Text)  # as the service reported it
+    prompt: Mapped[str | None] = mapped_column(Text)
+    negative_prompt: Mapped[str | None] = mapped_column(Text)
+    parameters: Mapped[dict[str, Any]]
+    inputs: Mapped[list[Any]]
+    outputs: Mapped[list[Any]]
+    credits_cost: Mapped[Decimal | None] = mapped_column(Numeric)
+    credits_currency: Mapped[str] = mapped_column(Text)
+    fail_reason: Mapped[str | None] = mapped_column(Text)
+    service_created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    service_user_id: Mapped[str | None] = mapped_column(Text)
+    service_workspace: Mapped[str | None] = mapped_column(Text)
+    # The service login of the browser that saw it (shared subscription), not a person.
+    login_email: Mapped[str | None] = mapped_column(Text)
+    login_label: Mapped[str | None] = mapped_column(Text)
+    raw: Mapped[dict[str, Any]]
+    first_observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    last_observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    observation_count: Mapped[int] = mapped_column(Integer)
+    first_observed_by_user_id: Mapped[uuid.UUID | None]
+    sources: Mapped[list[Any]]  # response URLs / export files it was seen in (capped)
+    evidence: Mapped[str] = mapped_column(Text)
+
+    __table_args__ = (
+        UniqueConstraint("service", "service_job_id"),
+        Index("ix_service_generations_created", "service_created_at"),
+    )
+
+
+class UsageCapture(Base):
+    """One "Save usage page" capture (`usage.page_captured`). The full JSON responses and
+    page text stay in the event payload (`event_id`); this row holds what the dashboard shows."""
+
+    __tablename__ = "usage_captures"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True)  # capture_id
+    event_id: Mapped[uuid.UUID]
+    service: Mapped[str] = mapped_column(Text)
+    captured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    captured_by_user_id: Mapped[uuid.UUID | None]
+    page_url: Mapped[str] = mapped_column(Text)
+    page_title: Mapped[str | None] = mapped_column(Text)
+    login_email: Mapped[str | None] = mapped_column(Text)
+    login_label: Mapped[str | None] = mapped_column(Text)
+    service_user_id: Mapped[str | None] = mapped_column(Text)
+    response_count: Mapped[int] = mapped_column(Integer)
+    tables: Mapped[list[Any]]
+    text_chars: Mapped[int] = mapped_column(Integer)
+    source: Mapped[str] = mapped_column(Text)  # extension | import
+    source_file: Mapped[str | None] = mapped_column(Text)
+    evidence: Mapped[str] = mapped_column(Text)
+
+
 # ---------------------------------------------------------------- production
 
 
@@ -371,5 +445,7 @@ DERIVED_TABLES: list[type[Base]] = [
     Project,
     ServiceAccount,
     UnknownPayload,
+    ServiceGeneration,
+    UsageCapture,
     User,
 ]

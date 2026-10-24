@@ -12,6 +12,23 @@ const QUEUE_KEY = "eventQueue";
 const STATUS_KEY = "queueStatus";
 const MAX_QUEUE = 20_000;
 const BATCH = 100;
+// History objects and saved usage pages are much larger than generation events: a batch
+// also stops at this much JSON, so one POST never grows unbounded (always ≥ 1 event).
+export const BATCH_MAX_CHARS = 8 * 1024 * 1024;
+
+/** The next batch: up to BATCH events, within BATCH_MAX_CHARS of JSON. */
+export function takeBatch<T>(events: T[], maxChars = BATCH_MAX_CHARS, max = BATCH): T[] {
+  const out: T[] = [];
+  let size = 0;
+  for (const event of events) {
+    if (out.length >= max) break;
+    const n = JSON.stringify(event).length;
+    if (out.length && size + n > maxChars) break;
+    out.push(event);
+    size += n;
+  }
+  return out;
+}
 
 export interface QueueStatus {
   sent: number;
@@ -75,7 +92,7 @@ export async function flush(): Promise<void> {
   const session = await getSession();
   if (!session) return;
   // Legacy unowned events cannot safely be attributed after an account switch.
-  const batch = queue.filter((event) => event.owner_user_id === session.user.id).slice(0, BATCH);
+  const batch = takeBatch(queue.filter((event) => event.owner_user_id === session.user.id));
   if (!batch.length) return;
   let results: IngestResult[];
   try {

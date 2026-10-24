@@ -24,11 +24,13 @@ Load the extension: `chrome://extensions` → Developer mode → **Load unpacked
 
 ```sh
 .venv/bin/python -m alembic upgrade head     # create / migrate tables
-.venv/bin/python -m faible.cli seed          # demo users (password: changeme), project, chain
+.venv/bin/python -m faible.cli seed          # DEMO data only: never on the live database (DECISIONS #69)
 .venv/bin/python -m faible.cli verify-log    # walk the hash chain
 .venv/bin/python -m faible.cli rebuild       # replay the log; checksum must match
 .venv/bin/python -m faible.cli checksum
 .venv/bin/python -m faible.cli events-doc    # regenerate docs/EVENTS.md
+.venv/bin/python -m faible.cli import-history PATH… [--dry-run]   # Higgsfield exporter files → log
+.venv/bin/python -m faible.cli export-history [--out DIR]         # history → exporter files
 ../scripts/demo_phase1.sh                    # Phase 1 demo on a throwaway database
 ```
 
@@ -52,9 +54,12 @@ queue and hosts seen; page DevTools console shows `[faible]` lines per capture.
 ## Checks
 
 ```sh
-cd server && .venv/bin/pytest && .venv/bin/ruff check . && .venv/bin/mypy faible
+cd server && .venv/bin/python -m pytest && .venv/bin/python -m ruff check . \
+  && .venv/bin/python -m ruff format --check . && .venv/bin/python -m mypy faible
 cd extension && npm test && npx tsc --noEmit && npx eslint .
 ```
+
+(`python -m …` works even when the venv's script shebangs point at an old checkout path.)
 
 ## Company login and live dashboard
 
@@ -87,6 +92,85 @@ spacing and punctuation. Substring matching follows the supplied filter.
 
 Queued captures retain their original artist identity across account switches. Legacy
 unowned queue entries are not attributed to a new login automatically.
+
+## Dashboard: employee analytics and studio overview
+
+`http://localhost:8000/dashboard` has one filter bar and four tabs. Filters: employee
+(directors/admins), period (presets or custom dates), time zone (this browser, IST or UTC),
+service, model, status, project, shot and generation type. The URL keeps them, so a filtered
+view can be shared.
+
+- **Overview**: totals (generations by status, reported cost, estimated UI credits, unknown
+  costs, prompts, inputs/outputs linked to assets, downloads, usage pages), generations per
+  day and per hour, and breakdowns by service, model, status, type, project and shot. Click a
+  label to filter the dashboard by it; click a count to open those generations in the live
+  feed. The prompt history lists recent prompts with their inputs and outputs, the
+  generations upstream and downstream of each in the prompt chain, and **Open chain**, the
+  shot/asset page with the full chain and word-level prompt diffs. Directors and admins also
+  get the employee comparison (ranked), model usage per employee, and the unattributed
+  Higgsfield history summary.
+- **Live feed**: the existing live dashboard (summaries and paginated history, refreshed
+  every two seconds), now narrowed by the filters.
+- **Usage pages**: pages saved with "Save usage page", with their tables. Artists see the
+  pages they saved; directors/admins see all.
+- **Higgsfield history** (directors/admins): generations as Higgsfield's own history lists
+  them, from any employee's extension or imported exporter files, marked attributed (an
+  employee's extension captured the same job live) or unattributed.
+
+How things are counted is shown under "How these numbers are counted" on the page:
+attribution is always the Faible user signed in to the extension, never the shared
+Higgsfield login; a job seen both live and in history counts once; costs are summed per
+currency as the service reported them and unknown costs are counted, not zeroed; "UI
+credits" = Higgsfield cost ÷ 100 is an estimate (the exporter's convention; the unit is not
+verified). API: `GET /api/v1/analytics`, `/api/v1/usage-captures[/{id}]`,
+`/api/v1/service-history`, and `/api/v1/dashboard` with the same filter parameters.
+
+## Higgsfield history, usage pages and JSON export (integrated exporter)
+
+The standalone Higgsfield exporter (`../higgsfield_exporter`) is built into this extension
+(DECISIONS #59–68). It runs on Faible's single capture path, so a response is observed once.
+In the toolbar popup, on a higgsfield.ai tab:
+
+- **Higgsfield login**: detected from Higgsfield's Clerk session or account responses; type
+  a label if it isn't detected. It names the export folders and is stored as metadata only.
+- **Auto-scroll & capture** scrolls a history page (Assets, Marketing Studio…) to the end.
+  Every generation Higgsfield's history returns is kept in this browser and, when you are
+  signed in to Faible, sent as studio history (not as your generations).
+- **Save usage page** on Higgsfield's Usage or Organization page saves the JSON the page
+  loaded plus its tables and text (labelled as read from the page), redacted.
+- **Saved in this browser**: per-login counts, **Export** / **Export all** to a folder you
+  choose once (`generations.json`, `generations_raw.json`, `usage_raw.json`, the exporter's
+  formats, readable by its audit page, review page, merge script and usage dashboard),
+  **Rename** and **Clear** (clears this browser's copy only).
+
+History also arrives passively while you browse Higgsfield. Nothing is sent to the server
+without a Faible login; the local copy works either way, as the exporter did.
+
+## Upgrading from the two separate extensions
+
+1. Server: `cd server && .venv/bin/python -m alembic upgrade head`. The migration only adds
+   the `service_generations` and `usage_captures` tables; existing events and tables are
+   untouched, and `verify-log` / `rebuild` keep passing.
+2. Extension: `cd extension && npm run build`, then reload **Faible** in `chrome://extensions`
+   (same unpacked folder, so the login, queue and settings are kept) and refresh open
+   Higgsfield/Magnific tabs.
+3. Old exporter extension: in its popup, **Export all** first (its saved data lives in that
+   extension's storage, which Faible cannot read). Then disable or remove it, so two
+   extensions don't capture the same pages.
+4. Old exporter files: load them into Faible (attributed to no employee; safe to re-run):
+
+   ```sh
+   .venv/bin/python -m faible.cli import-history ../../higgsfield_exporter/exports --dry-run
+   .venv/bin/python -m faible.cli import-history ../../higgsfield_exporter/exports \
+       ../../higgsfield_exporter/to_be_cleaned
+   ```
+
+   Folders are read recursively. Raw, normalized, audited/selected, merged and Seedance
+   files are understood; records already recorded are skipped, so adding the `merged/` files
+   only adds what the per-account exports lack. The files themselves are never modified.
+5. To use the exporter's own tools on the merged data: `faible export-history --out DIR`
+   (a new folder), then e.g.
+   `python3 ../../higgsfield_exporter/dashboard/serve.py --exports DIR`.
 
 ## Studio admin view
 

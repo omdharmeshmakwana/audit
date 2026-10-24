@@ -6,6 +6,8 @@
 // project channels also show other artists' jobs; their own extensions record those.
 
 import type { Capture, Completed, OutputRef, Requested } from "../adapters/types";
+import type { UsageCapture } from "../history/db";
+import { signature } from "../history/extract";
 import type { CaptureRecord } from "../shared/capture";
 
 export interface FaibleEvent {
@@ -32,9 +34,11 @@ export interface PipelineState {
   outputs: Record<string, StoredOutput>; // "service:job" (and aliases) →
   uploadSlots: Record<string, { service: string; service_asset_id: string; public_url: string | null; at: string }>;
   unknownSeen: Record<string, string>; // "service:path" → at
+  /** "service:job" → signature of the history object last sent (DECISIONS #59). */
+  history: Record<string, { sig: string; at: string }>;
 }
 
-export const emptyState = (): PipelineState => ({ submitted: {}, emitted: {}, outputs: {}, uploadSlots: {}, unknownSeen: {} });
+export const emptyState = (): PipelineState => ({ submitted: {}, emitted: {}, outputs: {}, uploadSlots: {}, unknownSeen: {}, history: {} });
 
 export interface HashJob {
   /** completion: an own job's output. upload: the stored copy of a file the artist uploaded
@@ -61,11 +65,21 @@ function event(ctx: PlanContext, record: CaptureRecord, type: string, evidence: 
   return { event_id: ctx.newId(), type, occurred_at: record.captured_at, evidence, payload };
 }
 
-function requested(c: Requested, record: CaptureRecord, state: PipelineState, ctx: PlanContext): FaibleEvent[] {
-  if (c.job_id && state.submitted[key(c.service, c.job_id)]) return []; // same submit seen twice
+function requested(c: Requested, record: CaptureRecord, state: PipelineState, ctx: PlanContext, plan: Plan): void {
+  if (c.job_id && state.submitted[key(c.service, c.job_id)]) return; // same submit seen twice
   const activity_id = ctx.newId();
   if (c.job_id) state.submitted[key(c.service, c.job_id)] = { activity_id, at: record.captured_at };
-  return [
+  // An input picked from the service's library (or reused) is never re-uploaded, so no
+  // upload_bytes arrives for it. Fetch its stored copy so the server can register and
+  // fingerprint it; hashOutput skips URLs it has already hashed.
+  for (const i of c.inputs) {
+    if (!i.url || !i.service_asset_id || !/^https:/.test(i.url)) continue;
+    plan.hashJobs.push({
+      method: "upload",
+      output: { index: 0, url: i.url, fetch_url: ctx.signedUrls[i.url] ?? i.url, service: c.service, job_id: i.service_asset_id, service_asset_id: i.service_asset_id, media_type: null, at: record.captured_at },
+    });
+  }
+  plan.events.push(
     event(ctx, record, "generation.requested", c.evidence, {
       activity_id,
       service: c.service,
@@ -83,7 +97,7 @@ function requested(c: Requested, record: CaptureRecord, state: PipelineState, ct
       shot_id: ctx.activeShotId,
       service_account: c.service_account,
     }),
-  ];
+  );
 }
 
 function completed(c: Completed, record: CaptureRecord, state: PipelineState, ctx: PlanContext, plan: Plan): void {
@@ -147,7 +161,7 @@ export function plan(record: CaptureRecord, captures: Capture[] | null, state: P
   for (const c of captures) {
     switch (c.kind) {
       case "requested":
-        out.events.push(...requested(c, record, state, ctx));
+        requested(c, record, state, ctx, out);
         break;
       case "status": {
         if (!state.submitted[key(c.service, c.job_id)]) break;
@@ -240,16 +254,75 @@ export function completedFromDownload(
   };
 }
 
-/** Drop the oldest entries of each map so persisted state stays bounded. */
-export function pruneState(state: PipelineState, cap = 3000): void {
-  for (const map of [state.submitted, state.emitted, state.outputs, state.uploadSlots, state.unknownSeen] as Record<string, unknown>[]) {
+// ---------------------------------------------------------------- service history and usage
+//
+// History listings show every artist's jobs (shared workspace), so they are NOT turned into
+// generation.* events: they become service_generation.observed, which the server keeps apart
+// from activities and never attributes to the observer. The live path above is unchanged.
+
+export interface HistoryBatch {
+  service: string;
+  url: string; // the (redacted) response the objects came from
+  items: Record<string, unknown>[];
+  login: Record<string, string | null> | null; // ServiceLogin metadata
+  capturedAt: string;
+}
+
+/** One event per history object whose content changed since this browser last sent it. */
+export function planHistory(batch: HistoryBatch, state: PipelineState, newId: () => string): FaibleEvent[] {
+  state.history ??= {};
+  const out: FaibleEvent[] = [];
+  for (const item of batch.items) {
+    if (typeof item.id !== "string" || !item.id) continue;
+    const k = key(batch.service, item.id);
+    const sig = signature(item);
+    if (state.history[k]?.sig === sig) continue;
+    state.history[k] = { sig, at: batch.capturedAt };
+    out.push({
+      event_id: newId(),
+      type: "service_generation.observed",
+      occurred_at: batch.capturedAt,
+      evidence: "service_reported",
+      payload: { service: batch.service, service_job_id: item.id, source: "history", service_login: batch.login, source_url: batch.url, raw: item },
+    });
+  }
+  return out;
+}
+
+/** "Save usage page" → usage.page_captured (tables/text are labelled observed_dom by the server). */
+export function usageEvent(service: string, capture: UsageCapture, login: Record<string, string | null> | null, newId: () => string): FaibleEvent {
+  return {
+    event_id: newId(),
+    type: "usage.page_captured",
+    occurred_at: capture.capturedAt,
+    evidence: "observed",
+    payload: {
+      capture_id: newId(),
+      service,
+      source: "extension",
+      page_url: capture.pageUrl,
+      page_title: capture.pageTitle || null,
+      service_login: login,
+      responses: capture.responses.map((r) => ({ url: r.url, page_path: r.pagePath, captured_at: r.capturedAt, data: r.data })),
+      tables: capture.tables,
+      text: capture.text,
+    },
+  };
+}
+
+/** Drop the oldest entries of each map so persisted state stays bounded. History gets a
+ *  larger cap: a fully scrolled history page lists thousands of jobs, and a pruned entry is
+ *  re-sent (harmlessly, the server merges it) the next time the page is scrolled. */
+export function pruneState(state: PipelineState, cap = 3000, historyCap = 20_000): void {
+  for (const map of [state.submitted, state.emitted, state.outputs, state.uploadSlots, state.unknownSeen, state.history ?? {}] as Record<string, unknown>[]) {
     const keys = Object.keys(map);
-    if (keys.length <= cap) continue;
+    const limit = map === state.history ? historyCap : cap;
+    if (keys.length <= limit) continue;
     const at = (k: string) => {
       const v = map[k];
       return typeof v === "string" ? v : ((v as { at?: string }).at ?? "");
     };
     keys.sort((a, b) => at(a).localeCompare(at(b)));
-    for (const k of keys.slice(0, keys.length - cap)) delete map[k];
+    for (const k of keys.slice(0, keys.length - limit)) delete map[k];
   }
 }

@@ -1,14 +1,81 @@
 {% extends "base.html" %}
 {% block title %}Production dashboard{% endblock %}
 {% block main %}
-<h1>{{ 'Studio admin dashboard' if user.role in ['admin', 'director'] else 'My production dashboard' }}</h1>
-<p class="sub">Artist activity, current shots, models and reported credits. Updates every two seconds.</p>
-<label>Employee <select id="artist"><option value="">All employees</option></select></label>
-<p id="sync" role="status">Connecting…</p>
-<div id="overview" class="artist-overview"></div>
-<h2>Generation history</h2>
-<p class="muted">Includes queued, running, completed, failed and cancelled requests. Credit totals include reported costs; unknown costs are listed separately.</p>
-<div class="history-controls"><button id="previous" disabled>Previous</button><span id="page-status"></span><button id="next" disabled>Next</button></div>
-<div id="feed"></div>
+{% set manager = user.role in ['admin', 'director'] %}
+<h1>{{ 'Studio dashboard' if manager else 'My production dashboard' }}</h1>
+<p class="sub">Generations captured by the Faible extension, attributed to the Faible account signed in to it — never to the shared Higgsfield or Magnific login.{% if manager %} Higgsfield history that no extension captured live is shown separately as unattributed.{% endif %}</p>
+
+<form id="filters" class="filters" aria-label="Filters" onsubmit="return false">
+  <label>Employee <select id="f-employee"></select></label>
+  <label>Period
+    <select id="f-range">
+      <option value="all">All time</option>
+      <option value="7">Last 7 days</option>
+      <option value="30">Last 30 days</option>
+      <option value="90">Last 90 days</option>
+      <option value="month">This month</option>
+      <option value="lastmonth">Last month</option>
+      <option value="custom">Custom…</option>
+    </select>
+  </label>
+  <label class="custom-range" hidden>From <input type="date" id="f-from" /></label>
+  <label class="custom-range" hidden>To <input type="date" id="f-to" /></label>
+  <label>Time zone <select id="f-tz"></select></label>
+  <label>Service <select id="f-service"></select></label>
+  <label>Model <select id="f-model"></select></label>
+  <label>Status <select id="f-status"></select></label>
+  <label>Project <select id="f-project"></select></label>
+  <label>Shot <select id="f-shot"></select></label>
+  <label>Type <select id="f-kind"></select></label>
+  <button type="button" id="f-clear">Clear filters</button>
+</form>
+<p id="filter-summary" class="muted filter-summary"></p>
+
+<nav class="tabs" role="tablist" aria-label="Dashboard views">
+  <button type="button" role="tab" data-tab="overview">Overview</button>
+  <button type="button" role="tab" data-tab="live">Live feed</button>
+  <button type="button" role="tab" data-tab="usage">Usage pages</button>
+  {% if manager %}<button type="button" role="tab" data-tab="history">Higgsfield history</button>{% endif %}
+</nav>
+
+<section data-panel="overview" hidden>
+  <p id="ov-status" role="status" class="muted">Loading…</p>
+  <div id="kpis" class="kpis"></div>
+  <div id="ov-body"></div>
+  <details class="rules panel">
+    <summary>How these numbers are counted</summary>
+    <ul id="rules"></ul>
+  </details>
+</section>
+
+<section data-panel="live" hidden>
+  <p class="sub">Artist activity, current shots, models and reported credits. Updates every two seconds while this tab is open, for the filters above.</p>
+  <p id="sync" role="status">Connecting…</p>
+  <div id="overview" class="artist-overview"></div>
+  <h2>Generation history</h2>
+  <p class="muted">Includes queued, running, completed, failed and cancelled requests. Credit totals include reported costs; unknown costs are listed separately.</p>
+  <div class="history-controls"><button id="previous" disabled>Previous</button><span id="page-status"></span><button id="next" disabled>Next</button></div>
+  <div id="feed"></div>
+</section>
+
+<section data-panel="usage" hidden>
+  <p class="sub">Pages saved with “Save usage page” in the Faible extension on Higgsfield's Usage or Organization page. Tables and text are read from the page as it was displayed (<span class="badge ev-observed">observed dom</span>); the JSON the page loaded is kept with each capture. {% if not manager %}You see the pages you saved.{% endif %} Employee, period and service filters apply.</p>
+  <p id="usage-status" role="status" class="muted"></p>
+  <div id="usage-list"></div>
+</section>
+
+{% if manager %}
+<section data-panel="history" hidden>
+  <p class="sub">Generations as Higgsfield's own history lists them — seen by any employee's extension, or imported from Higgsfield exporter files with <code>faible import-history</code>. The workspace is shared, so a history record is attributed to an employee only when that employee's extension captured the same job live. The login shown is the Higgsfield subscription the browser was signed in to, not a person.</p>
+  <div id="history-summary"></div>
+  <div class="history-controls">
+    <label><input type="checkbox" id="h-unattributed" /> Unattributed only</label>
+    <label>Login <select id="h-login"><option value="">All logins</option></select></label>
+    <button id="h-previous" disabled>Previous</button><span id="h-page-status"></span><button id="h-next" disabled>Next</button>
+  </div>
+  <p id="h-status" role="status" class="muted"></p>
+  <div id="history-list" class="history-grid"></div>
+</section>
+{% endif %}
 <script src="/static/dashboard.js" defer></script>
 {% endblock %}

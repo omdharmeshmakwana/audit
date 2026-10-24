@@ -6,11 +6,15 @@
 // tabs but can no longer reach the worker ("extension context invalidated"). That is
 // detected and shown in the panel: the tab must be reloaded to capture again.
 
-import { MSG_TAG, type CaptureRecord } from "../shared/capture";
+import { MSG_TAG, serviceForHost, type CaptureRecord } from "../shared/capture";
+import { mountHistory } from "./history";
 import { mountPanel } from "./panel";
 import { mountPromptWarning } from "./prompt-warning";
 
 let invalidated = false;
+// History collection and "Save usage page" (the integrated Higgsfield exporter) read the
+// same records this relay forwards; top frame only, as in the exporter.
+const history = window.top === window && serviceForHost(location.hostname) === "higgsfield" ? mountHistory() : null;
 
 function contextAlive(): boolean {
   try {
@@ -45,6 +49,12 @@ window.addEventListener("message", (e: MessageEvent) => {
     return;
   }
   const r = data.record;
+  try {
+    history?.observe(r);
+  } catch {
+    /* history collection must never stop live capture */
+  }
+  if (r.transport === "account") return; // page login metadata: used above, not traffic
   console.debug("[faible]", r.transport, r.method ?? "", r.status ?? "", r.url);
   chrome.runtime.sendMessage({ type: "capture", record: r }).catch(() => {
     if (!contextAlive()) invalidated = true;

@@ -1,5 +1,8 @@
 // Toolbar popup: Faible login (typed here, in the extension's own page, where the service
-// site's scripts can't observe it), sync status and recent activity.
+// site's scripts can't observe it), sync status and recent activity, plus the integrated
+// Higgsfield exporter section (popup/history.ts).
+
+import { mountHistoryPopup } from "./history";
 
 interface State {
   loggedIn: boolean;
@@ -39,6 +42,7 @@ function list(el: HTMLElement, items: { at: string; label: string }[], empty: st
 }
 
 function render(s: State): void {
+  loggedIn = s.loggedIn;
   $("login").classList.toggle("hidden", s.loggedIn);
   $("app").classList.toggle("hidden", !s.loggedIn);
   $("who").textContent = s.user ? s.user.display_name : "";
@@ -86,5 +90,10 @@ $("discovery").addEventListener("change", (e) =>
   void send<State>({ type: "setDiscovery", enabled: (e.target as HTMLInputElement).checked }).then(render).catch(showError),
 );
 
+let loggedIn = false;
+const refreshHistory = mountHistoryPopup(() => loggedIn);
+
 void refresh();
+void refreshHistory();
 setInterval(() => void refresh(), 1500);
+setInterval(() => void refreshHistory(), 1500);

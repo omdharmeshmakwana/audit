@@ -13,7 +13,8 @@ Anything not seen in that traffic is marked `UNVERIFIED`.
 | `cms.higgsfield.ai` | CMS content (camera movements, creative controls, tips) — not provenance-relevant |
 | `pricing.higgsfield.ai` | `/v2/pricing-config` — price catalogue |
 | `layer-worker.higgsfield.ai` | Layer editor service: **image upscale** (`topaz_image`) generations |
-| `fast-and-furious-input-prod-…s3.amazonaws.com` | Presigned S3 `PUT` target for uploads (XHR) |
+| `fast-and-furious-input-prod-…s3.amazonaws.com` | Presigned S3 `PUT` target for uploads (XHR), until ~Oct 2026 |
+| `upload.higgsfield.ai` | Presigned `PUT` target for uploads since ~2026-10-19 (same path shape, `media/batch` `upload_url`) |
 | `d8j0ntlcm91z4.cloudfront.net` | **Generated outputs** (`/user_<service_user_id>/hf_<YYYYMMDD>_<HHMMSS>_<job_id>.<ext>`) |
 | `d2ol7oe51mr4n9.cloudfront.net` | **Uploaded inputs** (references, `media_input`) |
 | `cdn.higgsfield.ai` | Thumbnails (`thumbnail_url`) |
@@ -93,3 +94,20 @@ All API traffic is `fetch` + JSON; uploads are XHR `PUT` to S3. No WebSocket see
 - [x] download (video and image)
 - [x] upload (reference image)
 - [x] delete
+
+## History listings and the login (integrated exporter, DECISIONS #59–68)
+
+- Any Higgsfield JSON response holding generation-like objects (`id` + `params`/`model` +
+  `results`/`status`, the exporter's rule — chiefly `GET /fnf/jobs/accessible`) is also read
+  by `extension/src/content/history.ts`. Each object is sent as
+  `service_generation.observed` with the raw object; the live adapter above still decides
+  `generation.*` events, only for jobs this browser submitted (#33). The two meet on the job
+  id (`id` = `trace_id` = `service_job_id`).
+- History objects' `cost` is the same unit as the submit response's `job_sets[].cost`
+  (e.g. 10800 for a video). The exporter treated it as hundredths of a UI credit; Faible
+  stores it as reported and labels ÷100 as an estimate. Unit still UNVERIFIED.
+- The page's login (shared subscription) is read from `window.Clerk.user` (id, primary email,
+  full name, username) and, as a fallback, from account-like responses. It is metadata on
+  history and usage events, never attribution.
+- "Save usage page": the Usage / Organization pages' own JSON responses (wallet, transactions;
+  shapes UNVERIFIED, stored as received) plus the page's tables and text (`observed_dom`).

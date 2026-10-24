@@ -2,6 +2,7 @@
 
 import json
 import uuid
+from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -10,6 +11,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from faible.analytics import Filters, activity_where
 from faible.models import Activity, Asset, Shot, User
 from faible.views import _activity_view
 
@@ -35,7 +37,12 @@ def dashboard_data(
     *,
     limit: int = 50,
     offset: int = 0,
+    filters: Filters | None = None,
 ) -> dict[str, Any]:
+    """Summaries and the paginated feed. `filters` (period, service, model, status,
+    project, shot, type) narrow both, which is how every analytics aggregate drills down
+    into its underlying generations; the employee scope is `artist_id`, as before."""
+    where = activity_where(replace(filters, employee_id=None)) if filters else []
     manager = user.role in {"admin", "director"}
     if not manager and artist_id and artist_id != user.id:
         raise HTTPException(403, "You can only view your own dashboard")
@@ -87,6 +94,7 @@ def dashboard_data(
     )
     if scope:
         aggregate = aggregate.where(Activity.captured_by_user_id == scope)
+    aggregate = aggregate.where(*where)
     for (
         uid,
         service,
@@ -135,8 +143,8 @@ def dashboard_data(
         summary["credits"] = {
             currency: str(spend) for currency, spend in summary["credits"].items()
         }
-    query = select(Activity)
-    count_query = select(func.count()).select_from(Activity)
+    query = select(Activity).where(*where)
+    count_query = select(func.count()).select_from(Activity).where(*where)
     if scope:
         query = query.where(Activity.captured_by_user_id == scope)
         count_query = count_query.where(Activity.captured_by_user_id == scope)

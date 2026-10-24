@@ -13,7 +13,9 @@ import uuid
 from decimal import Decimal
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from faible.redact import redact, redact_string
 
 Evidence = Literal["originated", "service_reported", "observed", "inferred", "asserted"]
 Source = Literal["extension", "server", "script", "import"]
@@ -283,6 +285,120 @@ class AdapterUnknownPayload(Payload):
     sample: str = Field(max_length=2048)  # redacted, first 2 KB
 
 
+# ---------------------------------------------------------------- service history and usage
+#
+# Added with the Higgsfield exporter integration (DECISIONS #59). Both carry service data
+# verbatim, so the schema itself re-redacts it: a secret cannot reach the log through these
+# types whichever client (extension or `faible import-history`) sent them.
+
+
+def _log_safe(value: Any) -> Any:
+    """Redacted, and shaped so the payload survives a Postgres JSONB round trip unchanged
+    (verify-log recomputes hashes from the stored row): no NUL characters, no negative zero,
+    no integral floats JSONB would print back as integers."""
+    value = redact(value)
+
+    def walk(v: Any) -> Any:
+        if isinstance(v, dict):
+            return {str(k).replace("\x00", ""): walk(x) for k, x in v.items()}
+        if isinstance(v, list):
+            return [walk(x) for x in v]
+        if isinstance(v, str):
+            return v.replace("\x00", "")
+        if isinstance(v, float):
+            if v == 0:
+                return 0.0
+            if v.is_integer() and abs(v) >= 1e16:
+                return int(v)
+        return v
+
+    return walk(value)
+
+
+class ServiceLogin(Payload):
+    """The service account the browser was signed in to (the studio's shared Higgsfield
+    subscription login). Metadata only: attribution is always the Faible user (rule 8)."""
+
+    service_user_id: str | None = None
+    workspace_id: str | None = None
+    email: str | None = None
+    name: str | None = None
+    username: str | None = None
+    label: str | None = None  # a name typed in the extension when no login was detected
+    detected_by: Literal["clerk", "api", "manual", "import", "unknown"] | None = None
+
+
+class ServiceGenerationObserved(Payload):
+    """A generation as the service lists it in its own history/asset responses, whoever
+    made it (the workspace is shared). Never attributed to the observing Faible user."""
+
+    service: str
+    service_job_id: str = Field(min_length=1)
+    source: Literal["history", "import"]
+    service_login: ServiceLogin | None = None
+    source_url: str | None = None  # the response it was seen in (redacted)
+    source_file: str | None = None  # import only: the export file it came from
+    raw: dict[str, Any]
+
+    @field_validator("raw")
+    @classmethod
+    def _safe_raw(cls, v: dict[str, Any]) -> dict[str, Any]:
+        safe: dict[str, Any] = _log_safe(v)
+        return safe
+
+    @field_validator("source_url")
+    @classmethod
+    def _safe_url(cls, v: str | None) -> str | None:
+        return redact_string(v) if v else v
+
+
+class UsageResponse(Payload):
+    url: str
+    page_path: str | None = None
+    captured_at: str | None = None
+    data: Any = None
+
+    @field_validator("data")
+    @classmethod
+    def _safe_data(cls, v: Any) -> Any:
+        return _log_safe(v)
+
+    @field_validator("url")
+    @classmethod
+    def _safe_url(cls, v: str) -> str:
+        return redact_string(v)
+
+
+class UsagePageCaptured(Payload):
+    """ "Save usage page" on a service's Usage / Organization page: the JSON responses the
+    page loaded (service_reported) plus the tables and text it displayed, which are read
+    from the page and therefore labelled `observed_dom` (spec rule 2)."""
+
+    capture_id: uuid.UUID
+    service: str
+    source: Literal["extension", "import"]
+    page_url: str
+    page_title: str | None = None
+    service_login: ServiceLogin | None = None
+    responses: list[UsageResponse] = Field(default_factory=list)
+    tables: list[list[list[str]]] = Field(default_factory=list)
+    text: str = Field(default="", max_length=500_000)
+    dom_evidence: Literal["observed_dom"] = "observed_dom"
+    source_file: str | None = None
+
+    @field_validator("tables")
+    @classmethod
+    def _safe_tables(cls, v: list[list[list[str]]]) -> list[list[list[str]]]:
+        safe: list[list[list[str]]] = _log_safe(v)
+        return safe
+
+    @field_validator("text", "page_url")
+    @classmethod
+    def _safe_text(cls, v: str) -> str:
+        safe: str = _log_safe(v)
+        return safe
+
+
 EVENT_TYPES: dict[str, type[Payload]] = {
     "user.registered": UserRegistered,
     "user.role_changed": UserRoleChanged,
@@ -307,6 +423,8 @@ EVENT_TYPES: dict[str, type[Payload]] = {
     "audit.flag_raised": AuditFlagRaised,
     "audit.flag_dismissed": AuditFlagDismissed,
     "adapter.unknown_payload": AdapterUnknownPayload,
+    "service_generation.observed": ServiceGenerationObserved,
+    "usage.page_captured": UsagePageCaptured,
 }
 
 

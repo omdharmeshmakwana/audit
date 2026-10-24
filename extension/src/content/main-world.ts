@@ -447,6 +447,43 @@ if (typeof window.EventSource === "function") {
   });
 }
 
+// ---------------------------------------------------------------- service login (history export)
+//
+// The Higgsfield login (the studio's shared subscription) labels history exports, as it did in
+// the standalone exporter. Read from Clerk's client object, polled so account switches show;
+// relayed as metadata only and never used for attribution (hard rule 8, DECISIONS #59).
+
+interface ClerkUser {
+  id?: string;
+  fullName?: string | null;
+  username?: string | null;
+  primaryEmailAddress?: { emailAddress?: string } | null;
+}
+
+if (SERVICE === "higgsfield" && window.top === window) {
+  let lastLogin = "";
+  setInterval(() => {
+    try {
+      const u = (window as unknown as { Clerk?: { user?: ClerkUser | null } }).Clerk?.user;
+      if (!u) return;
+      const account = {
+        id: u.id ?? null,
+        email: u.primaryEmailAddress?.emailAddress ?? null,
+        name: u.fullName ?? null,
+        username: u.username ?? null,
+        source: "clerk",
+      };
+      const key = JSON.stringify(account);
+      if (key !== lastLogin && (account.email || account.id)) {
+        lastLogin = key;
+        post({ transport: "account", request_headers: {}, response_headers: {}, extra: { account } });
+      }
+    } catch {
+      /* never break the page */
+    }
+  }, 2000);
+}
+
 // ---------------------------------------------------------------- object URLs (method 2)
 //
 // Services save downloads from blob: URLs (Higgsfield does), which the worker cannot

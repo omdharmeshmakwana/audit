@@ -1,0 +1,27 @@
+{
+ "service": "higgsfield",
+ "transport": "xhr",
+ "captured_at": "2026-10-19T07:50:40.980Z",
+ "page_url": "https://higgsfield.ai/ai/image?model=gpt_image_2",
+ "method": "PUT",
+ "url": "https://upload.higgsfield.ai/user_36mMlkuUFLoVEvOM0icTtFFDdlE/6e459e23-b95d-4cc4-b45c-fe40ec7e87ce.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=[REDACTED]&X-Amz-Date=20261019T075040Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=content-type%3Bhost%3Bif-none-match&X-Amz-Security-Token=[REDACTED]&X-Amz-Signature=[REDACTED]",
+ "status": 200,
+ "request_headers": {
+  "content-type": "image/png"
+ },
+ "request_body": {
+  "__blob": true,
+  "size": 1712386,
+  "type": "image/png"
+ },
+ "response_headers": {
+  "content-length": "0",
+  "etag": "\"68f60e201318b507e7b4a1dfa2c78d44\""
+ },
+ "response_body": "",
+ "extra": {
+  "duration_ms": 849,
+  "json": false,
+  "truncated": false
+ }
+}

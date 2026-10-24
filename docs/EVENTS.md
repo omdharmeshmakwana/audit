@@ -544,3 +544,105 @@ The extension saw a response on a matched URL it could not parse (redacted, firs
   "sample": "{\"unexpected\":true}"
 }
 ```
+
+## `service_generation.observed`
+
+A generation as the service's own history lists it (any artist's: the workspace is shared), seen by the extension or read from a Higgsfield exporter file. `raw` is the service object, redacted by the schema. Derives `service_generations`; never attributed to the observer. `service_login` is the browser's service login (metadata).
+
+| field | type | |
+|---|---|---|
+| `service` | `str` | required |
+| `service_job_id` | `str` | required |
+| `source` | `Literal` | required |
+| `service_login` | `faible.events.ServiceLogin | None` | optional |
+| `source_url` | `str | None` | optional |
+| `source_file` | `str | None` | optional |
+| `raw` | `dict` | required |
+
+```json
+{
+  "service": "higgsfield",
+  "service_job_id": "019d1238-9148-44fd-b677-b7ffed0b2406",
+  "source": "history",
+  "service_login": {
+    "service_user_id": "user_3ECiURKwUqh6ASKaK7h7PNdeeiX",
+    "email": "subscriptions.9@faiblemedia.com",
+    "detected_by": "clerk"
+  },
+  "source_url": "https://fnf-api-gw.higgsfield.ai/fnf/jobs/accessible?size=50",
+  "raw": {
+    "id": "019d1238-9148-44fd-b677-b7ffed0b2406",
+    "job_set_type": "seedance_2_5",
+    "status": "completed",
+    "params": {
+      "prompt": "Gateway of India at dawn",
+      "duration": 5
+    },
+    "results": {
+      "raw": {
+        "type": "video",
+        "url": "https://d8j0ntlcm91z4.cloudfront.net/…/hf_….mp4"
+      }
+    },
+    "cost": 10800,
+    "created_at": 1788862374.685334,
+    "user_id": "user_3ECiURKwUqh6ASKaK7h7PNdeeiX"
+  }
+}
+```
+
+## `usage.page_captured`
+
+“Save usage page” on a service's Usage / Organization page: the JSON responses the page loaded, plus the tables and text it displayed (read from the page: `dom_evidence: observed_dom`). Redacted by the schema. Derives `usage_captures`.
+
+| field | type | |
+|---|---|---|
+| `capture_id` | `UUID` | required |
+| `service` | `str` | required |
+| `source` | `Literal` | required |
+| `page_url` | `str` | required |
+| `page_title` | `str | None` | optional |
+| `service_login` | `faible.events.ServiceLogin | None` | optional |
+| `responses` | `list` | optional |
+| `tables` | `list` | optional |
+| `text` | `str` | optional |
+| `dom_evidence` | `Literal` | optional |
+| `source_file` | `str | None` | optional |
+
+```json
+{
+  "capture_id": "5b0c2f1e-8a0d-4c7b-9a51-3f2d7e6c1a90",
+  "service": "higgsfield",
+  "source": "extension",
+  "page_url": "https://higgsfield.ai/usage",
+  "page_title": "Usage · Higgsfield",
+  "service_login": {
+    "email": "subscriptions.9@faiblemedia.com",
+    "detected_by": "clerk"
+  },
+  "responses": [
+    {
+      "url": "https://fnf-api-gw.higgsfield.ai/fnf/workspaces/wallet",
+      "page_path": "/usage",
+      "captured_at": "2026-10-23T09:00:00.000Z",
+      "data": {
+        "total_credits": 73088
+      }
+    }
+  ],
+  "tables": [
+    [
+      [
+        "Date",
+        "Credits"
+      ],
+      [
+        "23 Oct",
+        "108"
+      ]
+    ]
+  ],
+  "text": "Usage … 108 credits …",
+  "dom_evidence": "observed_dom"
+}
+```
